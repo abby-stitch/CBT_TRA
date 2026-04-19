@@ -1,21 +1,43 @@
 from agent import CBTAgent
 
 agent = CBTAgent()
-print("✅ CBT Thought Record Agent | Logic & Conversation Decoupled\n")
+print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
 
-# 初始引导：由于 run_cycle 需要用户输入，我们先手动获取第一步的引导词
-# 或者我们可以修改 run_cycle 支持空输入，但这里简单处理：
-first_msg = agent.generate_response("Hello, I want to start a thought record.", is_complete=False)
+# Initial assistant message
+first_msg = agent.respond(None)
+print(f"Agent: {first_msg}")
 agent.chat_history.append({"role": "assistant", "content": first_msg})
-print(f"Agent: {first_msg}\n")
-
-while agent.is_active:
-    user = input("You: ")
-    if user.lower() in ["exit", "quit", "stop"]:
+agent.save_session()
+step = 0
+while agent.current_step <= 7:
+    step += 1
+    print(f"========== Step {agent.current_step} Round {step} =========")
+    user_in = input("You: ")
+    if user_in.lower() in ["exit", "quit"]:
         break
-    
-    reply = agent.run_cycle(user)
-    print(f"Agent: {reply}\n")
+    agent.chat_history.append({"role": "user", "content": user_in})
 
-print("\n🎉 CBT WORKFLOW COMPLETED!")
-print("Files saved: chat_history.json, thought_record.json")
+    prev_step = agent.current_step
+    step_completed = agent.extract_and_fill(user_in)
+    if step_completed:
+        print(f"✅ Step {agent.current_step} complete!")
+        step = 0
+        agent.current_step += 1
+
+    assistant_msg = agent.respond(user_in, step_completed=step_completed, step_before=prev_step)
+    print(f"Agent: {assistant_msg}")
+    agent.chat_history.append({"role": "assistant", "content": assistant_msg})
+
+    agent.turns.append({
+        "step_before": prev_step,
+        "step_after": agent.current_step,
+        "user": user_in,
+        "assistant": assistant_msg
+    })
+    agent.save_session()
+
+    if agent.current_step == 7:
+        # summary already generated in this turn
+        break
+
+print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")

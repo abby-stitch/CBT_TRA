@@ -1,219 +1,385 @@
 import json
 import requests
+import re
+import os
 from datetime import datetime
 from prompts import CBTPrompts
 
 class CBTAgent:
-    def __init__(self, model="gemma2:9b"):
+    def __init__(self, step=1, initial_record=None, model="gemma2:9b"):
         self.model = model
         self.url = "http://localhost:11434/api/generate"
-
-        self.current_step = 1
-        self.max_step = 7
-        self.is_active = True
-        self.chat_history = []
-
-        # 最终要求的 JSON 格式
-        self.thought_record = {
+        self.current_step = step
+        
+        # Terminology: the whole workflow is one Session, each exchange is one Turn
+        self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.chat_history = []  # message-level history: [{role, content}]
+        self.turns = []         # turn-level history: [{step, assistant_ask, user, assistant_reply}]
+        
+        self.thought_record = initial_record or {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "situation": "",
-            "emotions": [],  # 存储 {"emotion": "", "intensity_before": 0, "intensity_after": 0}
-            "automatic_thought": "",
-            "evidence_for": [],
-            "evidence_against": [],
-            "identified_distortions": [],
-            "alternative_thought": ""
+            "situation": "", 
+            "emotion": "", 
+            "intensity_before": 0, 
+            "automatic_thought": "", 
+            "evidence_for": [], 
+            "evidence_against": [], 
+            "distortions": [], 
+            "predicted_distortion": [],
+            "balanced_thought": "", 
+            "intensity_after": 0
         }
+        
+        self.REQUIRED_FIELDS = {
+            1: ["situation", "emotion", "intensity_before", "automatic_thought"],
+            2: ["evidence_for"],
+            3: ["evidence_against"],
+            4: ["distortions"],
+            5: ["balanced_thought"],
+            6: ["intensity_after"],
+            7: [] 
+        }
+
+    def _is_field_filled(self, field_name: str) -> bool:
+        val = self.thought_record.get(field_name)
+        if isinstance(val, list):
+            return len(val) > 0
+        if isinstance(val, (int, float)):
+            return val != 0
+        return bool(str(val).strip())
+
+    def missing_fields_for_current_step(self):
+        fields = self.REQUIRED_FIELDS.get(self.current_step, [])
+        return [f for f in fields if not self._is_field_filled(f)]
+
+    def ensure_predicted_distortions(self) -> list[str]:
+        """
+        Step 4 helper:
+        If predicted_distortion is empty, ask the LLM to propose 1–3 likely distortions using the Step 4 KB,
+        store them into thought_record["predicted_distortion"], then return the list.
+        """
+        if self.current_step != 4:
+            return []
+        if self.thought_record.get("predicted_distortion"):
+            return self.thought_record["predicted_distortion"]
+
+        system_p = CBTPrompts.system()
+        step4_p = getattr(CBTPrompts, "step4")()
+        record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+
+        prompt = f"""
+{system_p}
+---
+STEP 4 RULES (use the Knowledge Base inside):
+{step4_p}
+---
+CURRENT RECORD STATE:
+{record_json}
+
+TASK:
+1. Based on the user's situation, automatic_thought, and evidence, suggest 1–3 likely cognitive distortions.
+2. Use ONLY labels that appear in the Knowledge Base.
+3. Output ONLY valid JSON:
+{{"predicted_distortion": ["distortion1", "distortion2"]}}
+"""
+        raw = self._call_llm(prompt, temperature=0.1)
+        try:
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if not match:
+                return []
+            json_str = re.sub(r",\s*\}", "}", match.group(0))
+            data = json.loads(json_str)
+            preds = data.get("predicted_distortion") or []
+            if isinstance(preds, str):
+                preds = [preds]
+            preds = [p.strip() for p in preds if isinstance(p, str) and p.strip()]
+            if preds:
+                self.thought_record["predicted_distortion"] = preds[:3]
+            return self.thought_record.get("predicted_distortion", [])
+        except Exception:
+            return []
+
+    def _field_ask_spec(self, field_name: str) -> str:
+        specs = {
+            "situation": "Ask what happened / what the specific situation was. One sentence is enough.",
+            "emotion": "Ask for a feeling word (e.g., upset, anxious, sad).",
+            "intensity_before": "Ask for a 0–100 rating of the emotion at its peak.",
+            "automatic_thought": "Ask for the specific thought/image at the worst moment (the 'hot thought').",
+            "evidence_for": "Ask for factual evidence supporting the thought (facts, not feelings).",
+            "evidence_against": "Ask for factual evidence against the thought (facts that don't fit it).",
+            "distortions": "First propose 1–3 likely distortion labels, then ask the user which ones fit (use tentative language).",
+            "balanced_thought": "Ask for a more balanced, realistic alternative thought (not overly positive).",
+            "intensity_after": "Ask for a 0–100 rating of the original emotion now.",
+        }
+        return specs.get(field_name, f"Ask for: {field_name}")
+
+    def _ask_with_llm(self, missing_fields):
+        system_p = CBTPrompts.system()
+        step_p = getattr(CBTPrompts, f"step{self.current_step}")()
+        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+        missing_specs = "\n".join([f"- {f}: {self._field_ask_spec(f)}" for f in missing_fields])
+        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
+
+        prompt = f"""
+{system_p}
+---
+CURRENT STEP: {self.current_step}
+STEP RULES:
+{step_p}
+---
+CURRENT RECORD STATE:
+{current_record_json}
+---
+RECENT TURNS:
+{recent_turns}
+---
+MISSING FIELDS (ask ONLY for these):
+{missing_fields}
+
+FIELD-SPECIFIC GUIDANCE:
+{missing_specs}
+
+TASK:
+1. Write ONE warm, clear question to obtain the missing field(s).
+2. Do NOT ask for anything already present in CURRENT RECORD STATE.
+3. If both emotion and intensity_before are missing, ask them together in one question.
+4. Otherwise, ask for ONLY ONE missing field at a time (choose the most important).
+5. Output ONLY the question (no explanation, no JSON, no markdown).
+"""
+        return self._call_llm(prompt, temperature=0.7)
 
     def _call_llm(self, prompt, temperature=0.7):
-        """通用 LLM 调用接口"""
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "temperature": temperature
-        }
+        payload = {"model": self.model, "prompt": prompt, "stream": False, "temperature": temperature}
         try:
             res = requests.post(self.url, json=payload)
             return res.json()["response"].strip()
         except Exception as e:
-            print(f"LLM Error: {e}")
-            return ""
+            return f"Error: {e}"
 
-    def internal_extract(self, user_input):
-        """功能 1：静默提取信息（低 Temperature 保证稳定性）"""
-        system_prompt = CBTPrompts.system()
-        step_prompt = getattr(CBTPrompts, f"step{self.current_step}")()
-        chat_history_str = json.dumps(self.chat_history[-5:], ensure_ascii=False)
-        current_record_str = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
-
-        extract_instruction = f"""
-{system_prompt}
----
-CURRENT STEP RULES:
-{step_prompt}
----
-CURRENT THOUGHT RECORD STATE (ALREADY FILLED):
-{current_record_str}
----
-CONVERSATION HISTORY:
-{chat_history_str}
-USER INPUT: {user_input}
-
-TASK:
-1. Identify if the user's latest input provides new information for ANY field in the record, especially the current step.
-2. Cross-check with the CURRENT THOUGHT RECORD STATE. Do NOT overwrite existing non-empty fields with empty values.
-3. Judge if the CURRENT step's required information is now complete (considering both previous state and new input).
-4. Output ONLY a valid JSON object:
-{{
-  "complete": true/false,
-  "extracted_data": {{ "field_name": "new_value" }}
-}}
-"""
-        raw_json = self._call_llm(extract_instruction, temperature=0.1)
-        try:
-            start = raw_json.find("{")
-            end = raw_json.rfind("}") + 1
-            return json.loads(raw_json[start:end])
-        except:
-            return {"complete": False, "extracted_data": {}}
-
-    def generate_response(self, user_input, is_complete):
-        """功能 2：生成有同理心的回复（正常 Temperature 保证自然度）"""
-        system_prompt = CBTPrompts.system()
-        step_prompt = getattr(CBTPrompts, f"step{self.current_step}")()
-        chat_history_str = json.dumps(self.chat_history[-5:], ensure_ascii=False)
-        current_record_str = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
-
-        status_msg = "The user has provided all information for this step. Transition to the next step naturally." if is_complete else "Some information is missing for the CURRENT STEP. Ask for it warmly and DIRECTLY."
+    def save_session(self):
+        """Persist session data after each turn to avoid data loss."""
+        # Ensure sessions directory exists
+        os.makedirs("sessions", exist_ok=True)
         
-        chat_instruction = f"""
-{system_prompt}
----
-CURRENT STEP TASK:
-{step_prompt}
----
-CURRENT THOUGHT RECORD STATE (ALREADY FILLED):
-{current_record_str}
----
-STATUS: {status_msg}
-CONVERSATION HISTORY: {chat_history_str}
-USER INPUT: {user_input}
+        session_data = {
+            "session_id": self.session_id,
+            "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "current_step": self.current_step,
+            "thought_record": self.thought_record,
+            "chat_history": self.chat_history,
+            "turns": self.turns
+        }
+        file_path = f"sessions/session_{self.session_id}.json"
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(session_data, f, indent=2, ensure_ascii=False)
 
-STRICT GUIDELINES FOR REPLY:
-1. NEVER use vague words like "more", "tell me more", or "anything else". Be specific about what is missing.
-2. Do NOT ask for information that is already present in the CURRENT THOUGHT RECORD STATE.
-3. If info is complete: Briefly validate and transition to the next task's core question.
-4. If info is missing: Empathize with the user's latest input, then ask DIRECTLY for the specific missing field (e.g., if intensity is missing, ask "On a scale of 0-100, how strong was that feeling?").
-5. Keep the persona of a warm, professional CBT counselor.
-"""
-        return self._call_llm(chat_instruction, temperature=0.7)
+    def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None) -> str:
+        """
+        Single response function:
+        - Explain when needed, then ask naturally.
+        - Ask for missing fields when needed.
+        - Transition naturally after step completion.
+        - Step 7 outputs a summary.
+        """
+        system_p = CBTPrompts.system()
+        step_p = getattr(CBTPrompts, f"step{self.current_step}")()
+        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-6:]])
+        missing = self.missing_fields_for_current_step()
+        step_before_val = step_before if step_before is not None else self.current_step
+        step_after_val = self.current_step
+        predicted = self.ensure_predicted_distortions() if self.current_step == 4 else []
 
-    def generate_final_summary(self):
-        """功能 4：生成结语并总结"""
-        system_prompt = CBTPrompts.system()
-        summary_instruction = f"""
-{system_prompt}
+        # Final summary step
+        if self.current_step == 7:
+            prompt = f"""
+{system_p}
 ---
-FINAL THOUGHT RECORD:
-{json.dumps(self.thought_record, indent=2, ensure_ascii=False)}
+CURRENT STEP: 7
+STEP RULES:
+{step_p}
+---
+FINAL RECORD:
+{current_record_json}
 
 TASK:
-1. Provide a warm, supportive closing statement.
-2. Summarize what the user has achieved today (e.g., identifying distortions, creating a balanced thought).
-3. Encourage them to keep practicing.
+Generate the final supportive summary now.
+Output only the counselor message.
 """
-        return self._call_llm(summary_instruction, temperature=0.7)
+            return self._call_llm(prompt, temperature=0.7)
+
+        # Opening message
+        if user_input is None:
+            return "Hello, I'm here to support you. What's on your mind today?"
+
+        transition_block = ""
+        if step_completed and step_after_val != step_before_val:
+            transition_block = f"""
+---
+TRANSITION MODE:
+The user's latest message completed Step {step_before_val}. You are now in Step {step_after_val}.
+Do NOT continue discussing Step {step_before_val}. Briefly acknowledge and ask the core question for Step {step_after_val}.
+"""
+
+        predicted_block = ""
+        step4_block = ""
+        if self.current_step == 4:
+            predicted_block = f"""
+---
+PREDICTED DISTORTIONS (Step 4 suggestions, if any):
+{predicted}
+"""
+            step4_block = """
+3. Step 4 special behavior:
+   - Use PREDICTED DISTORTIONS as your initial suggestion (1–3 items).
+   - Present them as tentative (might/could), with 1 short sentence each.
+   - Ask the user whether any of them fit their thought.
+"""
+
+        prompt = f"""
+{system_p}
+---
+CURRENT STEP: {self.current_step}
+STEP RULES:
+{step_p}
+{transition_block}
+CURRENT RECORD STATE:
+{current_record_json}
+---
+RECENT TURNS:
+{recent_turns}
+---
+LATEST USER MESSAGE:
+{user_input}
+---
+MISSING FIELDS FOR CURRENT STEP:
+{missing}
+{predicted_block}
+
+TASK:
+1. Produce ONE natural counselor response for this turn.
+2. If user asks for clarification/explanation, answer it briefly first (especially in Step 4, use the knowledge base and explain at most 3 relevant distortions, not the full list), then continue naturally.
+{step4_block}3. Then do one of:
+   - if there are missing fields: ask for the most important missing item;
+   - if no missing fields: give a short transition and ask the next-step question.
+4. Keep tone empathetic and specific. Avoid vague repetition like "tell me more" unless you specify what exactly is missing.
+5. Output only the counselor message.
+"""
+        return self._call_llm(prompt, temperature=0.7)
+
+    def extract_and_fill(self, user_input):
+        """Context-aware extraction logic."""
+        system_p = CBTPrompts.system()
+        step_p = getattr(CBTPrompts, f"step{self.current_step}")()
+        # Include context to handle short confirmations (Yes/No) more accurately
+        context = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-2:]])
+        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+        required_now = self.REQUIRED_FIELDS.get(self.current_step, [])
+        
+        prompt = f"""
+{system_p}
+---
+CURRENT STEP RULES: {step_p}
+CONTEXT (Recent Conversation):
+{context}
+CURRENT RECORD STATE:
+{current_record_json}
+---
+NEW USER INPUT: "{user_input}"
+
+TASK:
+1. Extract info for ANY CBT field in the thought record.
+2. PRIORITY: Since we are in Step {self.current_step}, focus on extracting these fields if present: {required_now}.
+3. If a field is already filled in CURRENT RECORD STATE, do NOT overwrite it.
+4. If user confirms something (e.g. "Yes", "Correct"), use CONTEXT to infer what they are confirming.
+5. Mapping rules:
+   - "emotion": MUST be a feeling word (e.g., upset, anxious, sad, angry, ashamed, frustrated). Do NOT treat self-judgment words as emotions (e.g., terrible, worthless, failure, stupid).
+     If the user does not provide a clear feeling word, leave "emotion" out.
+     If the user explicitly says "I feel X" where X is a self-judgment, map it to "automatic_thought" instead.
+   - Self-judgment / interpretation / prediction belongs to "automatic_thought" (e.g., terrible, worthless, failure, "I'll never find a job", "Everyone else can").
+   - "intensity_before"/"intensity_after": a number 0-100. If user replies only \"55\", treat it as the missing intensity for the current step.
+   - "distortions": MUST be names/labels of distortions, not questions.
+   - "predicted_distortion": assistant-suggested distortion labels (store as a list).
+   - "evidence_for"/"evidence_against": should be factual statements; output as a list when possible.
+6. Step 4 special extraction:
+   - If CURRENT STEP is 4 and the user asks you to decide / asks what distortions they have, you may output "predicted_distortion" (1–3 labels) using the Knowledge Base.
+7. Output ONLY valid JSON. No markdown, no extra text.
+"""
+        raw_json = self._call_llm(prompt, temperature=0.1)
+        try:
+            match = re.search(r'\{.*\}', raw_json, re.DOTALL)
+            if match:
+                json_str = re.sub(r',\s*\}', '}', match.group(0))
+                data = json.loads(json_str)
+                self.update_record(data)
+        except Exception as e:
+            print(f"[ERROR] Extraction failed: {e}\nRaw: {raw_json}")
+        
+        is_complete = self.is_current_step_complete()
+        print(f"\n[DEBUG] Step: {self.current_step} | Hard-Check Complete: {is_complete}")
+        print(f"[DEBUG] Record: {json.dumps(self.thought_record, indent=2, ensure_ascii=False)}\n")
+        return is_complete
+
+    def is_current_step_complete(self):
+        fields = self.REQUIRED_FIELDS.get(self.current_step, [])
+        for f in fields:
+            val = self.thought_record.get(f)
+            if isinstance(val, list) and not val: return False
+            if isinstance(val, (int, float)) and val == 0: return False
+            if isinstance(val, str) and not val.strip(): return False
+        return True
 
     def update_record(self, data):
-        """将提取的数据填入 thought_record，确保不覆盖已有内容"""
-        if not data:
-            return
+        for k, v in data.items():
+            if not v: continue
+            if k in self.thought_record:
+                if isinstance(self.thought_record[k], list):
+                    new_items = v if isinstance(v, list) else [v]
+                    for item in new_items:
+                        if item and item not in self.thought_record[k]:
+                            self.thought_record[k].append(item)
+                elif not self.thought_record[k] or self.thought_record[k] == 0:
+                    self.thought_record[k] = v
 
-        for key, value in data.items():
-            # 跳过空值，防止覆盖
-            if value is None or value == "" or value == []:
-                continue
+if __name__ == "__main__":
+    agent = CBTAgentTest(step=1)
+    print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
 
-            # 1. 处理普通字段
-            if key in self.thought_record and not isinstance(self.thought_record[key], list):
-                # 只有当原值为空时才写入，或者如果新值不同且非空则覆盖（根据需求决定是否覆盖）
-                self.thought_record[key] = value
-            
-            # 2. 处理列表字段
-            elif key in ["evidence_for", "evidence_against", "identified_distortions"]:
-                if isinstance(value, list):
-                    for item in value:
-                        if item and item not in self.thought_record[key]:
-                            self.thought_record[key].append(item)
-                elif value and value not in self.thought_record[key]:
-                    self.thought_record[key].append(value)
-            
-            # 3. 特殊处理 emotions
-            elif key in ["emotion", "intensity_before", "intensity_after"]:
-                self._handle_emotion_update(key, value)
+    # Initial assistant message
+    first_msg = agent.respond(None)
+    print(f"Agent: {first_msg}")
+    agent.chat_history.append({"role": "assistant", "content": first_msg})
+    agent.save_session()
+    step = 0
+    while agent.current_step <= 7:
+        step += 1
+        print(f"========== Step {agent.current_step} Round {step} =========")
+        user_in = input("You: ")
+        if user_in.lower() in ["exit", "quit"]:
+            break
+        agent.chat_history.append({"role": "user", "content": user_in})
 
-    def _handle_emotion_update(self, key, value):
-        """专门处理 emotions 列表的更新逻辑"""
-        if not self.thought_record["emotions"]:
-            self.thought_record["emotions"].append({"emotion": "", "intensity_before": 0, "intensity_after": 0})
-        
-        target = self.thought_record["emotions"][0] # 暂时处理主情绪
-        if key == "emotion":
-            target["emotion"] = value
-        elif key == "intensity_before":
-            try:
-                target["intensity_before"] = int(value)
-            except: pass
-        elif key == "intensity_after":
-            try:
-                target["intensity_after"] = int(value)
-            except: pass
+        prev_step = agent.current_step
+        step_completed = agent.extract_and_fill(user_in)
+        if step_completed:
+            print(f"✅ Step {agent.current_step} complete!")
+            step = 0
+            agent.current_step += 1
 
-    def run_cycle(self, user_input):
-        """主控循环：执行单轮对话并管理状态跃迁"""
-        if not self.is_active:
-            return "Session has ended."
+        assistant_msg = agent.respond(user_in, step_completed=step_completed, step_before=prev_step)
+        print(f"Agent: {assistant_msg}")
+        agent.chat_history.append({"role": "assistant", "content": assistant_msg})
 
-        # 1. 记录用户输入
-        self.chat_history.append({"role": "user", "content": user_input})
-        
-        # 2. 内部提取与判断
-        extraction = self.internal_extract(user_input)
-        is_complete = extraction.get("complete", False)
-        
-        # 3. 更新后台数据
-        self.update_record(extraction.get("extracted_data", {}))
-        
-        # 4. 状态跃迁与回复生成
-        if is_complete:
-            if self.current_step < self.max_step:
-                # 步骤前进，生成带“承上启下”的回复
-                reply = self.generate_response(user_input, is_complete=True)
-                self.current_step += 1
-            else:
-                # 所有步骤完成，生成总结
-                reply = self.generate_final_summary()
-                self.is_active = False
-        else:
-            # 信息不全，生成追问回复
-            reply = self.generate_response(user_input, is_complete=False)
-            
-        # 5. 记录 AI 回复
-        self.chat_history.append({"role": "assistant", "content": reply})
-        
-        # 6. 持久化保存
-        self.save_data()
-        
-        # DEBUG 日志
-        print(f"\n[Step {self.current_step}] Complete: {is_complete}")
-        print(f"Extracted: {extraction.get('extracted_data')}")
-        
-        return reply
+        agent.turns.append({
+            "step_before": prev_step,
+            "step_after": agent.current_step,
+            "user": user_in,
+            "assistant": assistant_msg
+        })
+        agent.save_session()
 
-    def save_data(self):
-        """保存完整对话记录和结构化表单"""
-        with open("chat_history.json", "w", encoding="utf-8") as f:
-            json.dump(self.chat_history, f, indent=2, ensure_ascii=False)
-        with open("thought_record.json", "w", encoding="utf-8") as f:
-            json.dump(self.thought_record, f, indent=2, ensure_ascii=False)
+        if agent.current_step == 7:
+            # summary already generated in this turn
+            break
+
+    print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")
