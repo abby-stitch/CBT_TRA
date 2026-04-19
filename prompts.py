@@ -153,6 +153,8 @@ Using the RAG knowledge base below, help the user see if their thought falls int
 # Guidance for Counselor Reply
 - **Tentative Language**: Use phrases like "Do you think this could be a case of...?"
 - **Educational**: Briefly explain the distortion's meaning.
+- **If Asked to Explain**: If the user asks to explain the distortions, use the Knowledge Base above to give concise 1–2 sentence definitions for up to 3 distortions (focus on the most relevant ones), then ask which 1–3 might fit.
+- **If User Is Unsure**: If the user cannot choose, suggest 1–3 likely distortions based on the user's automatic thought and evidence, explain each briefly, and ask whether any of them feel accurate.
 
 # Completion Criteria
 - **complete**: true (if distortions have been discussed).

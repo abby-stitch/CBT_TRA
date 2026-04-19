@@ -11,9 +11,10 @@ class CBTAgentTest:
         self.url = "http://localhost:11434/api/generate"
         self.current_step = step
         
-        # 1. 术语统一：整个流程是一个 Session，每一轮是一次 Turn
+        # Terminology: the whole workflow is one Session, each exchange is one Turn
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.chat_history = []  # 记录所有 Turns
+        self.chat_history = []  # message-level history: [{role, content}]
+        self.turns = []         # turn-level history: [{step, assistant_ask, user, assistant_reply}]
         
         self.thought_record = initial_record or {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -24,6 +25,7 @@ class CBTAgentTest:
             "evidence_for": [], 
             "evidence_against": [], 
             "distortions": [], 
+            "predicted_distortion": [],
             "balanced_thought": "", 
             "intensity_after": 0
         }
@@ -50,6 +52,53 @@ class CBTAgentTest:
         fields = self.REQUIRED_FIELDS.get(self.current_step, [])
         return [f for f in fields if not self._is_field_filled(f)]
 
+    def ensure_predicted_distortions(self) -> list[str]:
+        """
+        Step 4 helper:
+        If predicted_distortion is empty, ask the LLM to propose 1–3 likely distortions using the Step 4 KB,
+        store them into thought_record["predicted_distortion"], then return the list.
+        """
+        if self.current_step != 4:
+            return []
+        if self.thought_record.get("predicted_distortion"):
+            return self.thought_record["predicted_distortion"]
+
+        system_p = CBTPrompts.system()
+        step4_p = getattr(CBTPrompts, "step4")()
+        record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+
+        prompt = f"""
+{system_p}
+---
+STEP 4 RULES (use the Knowledge Base inside):
+{step4_p}
+---
+CURRENT RECORD STATE:
+{record_json}
+
+TASK:
+1. Based on the user's situation, automatic_thought, and evidence, suggest 1–3 likely cognitive distortions.
+2. Use ONLY labels that appear in the Knowledge Base.
+3. Output ONLY valid JSON:
+{{"predicted_distortion": ["distortion1", "distortion2"]}}
+"""
+        raw = self._call_llm(prompt, temperature=0.1)
+        try:
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if not match:
+                return []
+            json_str = re.sub(r",\s*\}", "}", match.group(0))
+            data = json.loads(json_str)
+            preds = data.get("predicted_distortion") or []
+            if isinstance(preds, str):
+                preds = [preds]
+            preds = [p.strip() for p in preds if isinstance(p, str) and p.strip()]
+            if preds:
+                self.thought_record["predicted_distortion"] = preds[:3]
+            return self.thought_record.get("predicted_distortion", [])
+        except Exception:
+            return []
+
     def _field_ask_spec(self, field_name: str) -> str:
         specs = {
             "situation": "Ask what happened / what the specific situation was. One sentence is enough.",
@@ -58,7 +107,7 @@ class CBTAgentTest:
             "automatic_thought": "Ask for the specific thought/image at the worst moment (the 'hot thought').",
             "evidence_for": "Ask for factual evidence supporting the thought (facts, not feelings).",
             "evidence_against": "Ask for factual evidence against the thought (facts that don't fit it).",
-            "distortions": "Ask which cognitive distortion labels might apply (1–3 labels).",
+            "distortions": "First propose 1–3 likely distortion labels, then ask the user which ones fit (use tentative language).",
             "balanced_thought": "Ask for a more balanced, realistic alternative thought (not overly positive).",
             "intensity_after": "Ask for a 0–100 rating of the original emotion now.",
         }
@@ -69,6 +118,7 @@ class CBTAgentTest:
         step_p = getattr(CBTPrompts, f"step{self.current_step}")()
         current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
         missing_specs = "\n".join([f"- {f}: {self._field_ask_spec(f)}" for f in missing_fields])
+        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
 
         prompt = f"""
 {system_p}
@@ -79,6 +129,9 @@ STEP RULES:
 ---
 CURRENT RECORD STATE:
 {current_record_json}
+---
+RECENT TURNS:
+{recent_turns}
 ---
 MISSING FIELDS (ask ONLY for these):
 {missing_fields}
@@ -91,7 +144,7 @@ TASK:
 2. Do NOT ask for anything already present in CURRENT RECORD STATE.
 3. If both emotion and intensity_before are missing, ask them together in one question.
 4. Otherwise, ask for ONLY ONE missing field at a time (choose the most important).
-5. Output ONLY the question.
+5. Output ONLY the question (no explanation, no JSON, no markdown).
 """
         return self._call_llm(prompt, temperature=0.7)
 
@@ -104,8 +157,8 @@ TASK:
             return f"Error: {e}"
 
     def save_session(self):
-        """每轮对话后保存：防止丢失，记录完整 Session"""
-        # 确保 sessions 目录存在
+        """Persist session data after each turn to avoid data loss."""
+        # Ensure sessions directory exists
         os.makedirs("sessions", exist_ok=True)
         
         session_data = {
@@ -113,57 +166,112 @@ TASK:
             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "current_step": self.current_step,
             "thought_record": self.thought_record,
-            "chat_history": self.chat_history
+            "chat_history": self.chat_history,
+            "turns": self.turns
         }
         file_path = f"sessions/session_{self.session_id}.json"
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(session_data, f, indent=2, ensure_ascii=False)
 
-    def ask_user(self):
-        """根据当前表单状态提问"""
+    def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None) -> str:
+        """
+        Single response function:
+        - Explain when needed, then ask naturally.
+        - Ask for missing fields when needed.
+        - Transition naturally after step completion.
+        - Step 7 outputs a summary.
+        """
+        system_p = CBTPrompts.system()
+        step_p = getattr(CBTPrompts, f"step{self.current_step}")()
+        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-6:]])
+        missing = self.missing_fields_for_current_step()
+        step_before_val = step_before if step_before is not None else self.current_step
+        step_after_val = self.current_step
+        predicted = self.ensure_predicted_distortions() if self.current_step == 4 else []
+
+        # Final summary step
         if self.current_step == 7:
-            system_p = CBTPrompts.system()
-            step_p = getattr(CBTPrompts, f"step{self.current_step}")()
-            current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
-            prompt = f"{system_p}\n---\n{step_p}\n---\nFINAL RECORD:\n{current_record_json}\n\nTASK: Generate the final summary now."
+            prompt = f"""
+{system_p}
+---
+CURRENT STEP: 7
+STEP RULES:
+{step_p}
+---
+FINAL RECORD:
+{current_record_json}
+
+TASK:
+Generate the final supportive summary now.
+Output only the counselor message.
+"""
             return self._call_llm(prompt, temperature=0.7)
 
-        is_empty = (
-            not self._is_field_filled("situation")
-            and not self._is_field_filled("emotion")
-            and not self._is_field_filled("automatic_thought")
-        )
-        if is_empty:
-            system_p = CBTPrompts.system()
-            step_p = getattr(CBTPrompts, f"step{self.current_step}")()
-            current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
-            prompt = f"""
+        # Opening message
+        if user_input is None:
+            return "Hello, I'm here to support you. What's on your mind today?"
+
+        transition_block = ""
+        if step_completed and step_after_val != step_before_val:
+            transition_block = f"""
+---
+TRANSITION MODE:
+The user's latest message completed Step {step_before_val}. You are now in Step {step_after_val}.
+Do NOT continue discussing Step {step_before_val}. Briefly acknowledge and ask the core question for Step {step_after_val}.
+"""
+
+        predicted_block = ""
+        step4_block = ""
+        if self.current_step == 4:
+            predicted_block = f"""
+---
+PREDICTED DISTORTIONS (Step 4 suggestions, if any):
+{predicted}
+"""
+            step4_block = """
+3. Step 4 special behavior:
+   - Use PREDICTED DISTORTIONS as your initial suggestion (1–3 items).
+   - Present them as tentative (might/could), with 1 short sentence each.
+   - Ask the user whether any of them fit their thought.
+"""
+
+        prompt = f"""
 {system_p}
 ---
 CURRENT STEP: {self.current_step}
 STEP RULES:
 {step_p}
----
+{transition_block}
 CURRENT RECORD STATE:
 {current_record_json}
+---
+RECENT TURNS:
+{recent_turns}
+---
+LATEST USER MESSAGE:
+{user_input}
+---
+MISSING FIELDS FOR CURRENT STEP:
+{missing}
+{predicted_block}
 
 TASK:
-Start the session as a warm CBT counselor. Ask one gentle, open-ended opening question.
-Output ONLY the question.
+1. Produce ONE natural counselor response for this turn.
+2. If user asks for clarification/explanation, answer it briefly first (especially in Step 4, use the knowledge base and explain at most 3 relevant distortions, not the full list), then continue naturally.
+{step4_block}3. Then do one of:
+   - if there are missing fields: ask for the most important missing item;
+   - if no missing fields: give a short transition and ask the next-step question.
+4. Keep tone empathetic and specific. Avoid vague repetition like "tell me more" unless you specify what exactly is missing.
+5. Output only the counselor message.
 """
-            return self._call_llm(prompt, temperature=0.7)
-
-        missing = self.missing_fields_for_current_step()
-        if not missing:
-            return "Thanks—let's move to the next step."
-
-        return self._ask_with_llm(missing)
+        return self._call_llm(prompt, temperature=0.7)
 
     def extract_and_fill(self, user_input):
-        """上下文感知的提取逻辑"""
+        """Context-aware extraction logic."""
         system_p = CBTPrompts.system()
         step_p = getattr(CBTPrompts, f"step{self.current_step}")()
-        # 核心改进：引入上下文，解决 Yes/No 识别问题
+        # Include context to handle short confirmations (Yes/No) more accurately
         context = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-2:]])
         current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
         required_now = self.REQUIRED_FIELDS.get(self.current_step, [])
@@ -185,11 +293,17 @@ TASK:
 3. If a field is already filled in CURRENT RECORD STATE, do NOT overwrite it.
 4. If user confirms something (e.g. "Yes", "Correct"), use CONTEXT to infer what they are confirming.
 5. Mapping rules:
-   - "emotion": a feeling word (e.g. upset, sad, anxious). If the user says \"I'm upset\", extract emotion=\"upset\".
+   - "emotion": MUST be a feeling word (e.g., upset, anxious, sad, angry, ashamed, frustrated). Do NOT treat self-judgment words as emotions (e.g., terrible, worthless, failure, stupid).
+     If the user does not provide a clear feeling word, leave "emotion" out.
+     If the user explicitly says "I feel X" where X is a self-judgment, map it to "automatic_thought" instead.
+   - Self-judgment / interpretation / prediction belongs to "automatic_thought" (e.g., terrible, worthless, failure, "I'll never find a job", "Everyone else can").
    - "intensity_before"/"intensity_after": a number 0-100. If user replies only \"55\", treat it as the missing intensity for the current step.
    - "distortions": MUST be names/labels of distortions, not questions.
+   - "predicted_distortion": assistant-suggested distortion labels (store as a list).
    - "evidence_for"/"evidence_against": should be factual statements; output as a list when possible.
-6. Output ONLY valid JSON. No markdown, no extra text.
+6. Step 4 special extraction:
+   - If CURRENT STEP is 4 and the user asks you to decide / asks what distortions they have, you may output "predicted_distortion" (1–3 labels) using the Knowledge Base.
+7. Output ONLY valid JSON. No markdown, no extra text.
 """
         raw_json = self._call_llm(prompt, temperature=0.1)
         try:
@@ -230,26 +344,42 @@ TASK:
 if __name__ == "__main__":
     agent = CBTAgentTest(step=1)
     print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
-    
-    while agent.current_step <= 7:
-        # 1. Agent's Turn
-        reply = agent.ask_user()
-        print(f"Agent: {reply}")
-        agent.chat_history.append({"role": "assistant", "content": reply})
-        agent.save_session() # 及时保存
-        
-        if agent.current_step == 7: break 
 
-        # 2. User's Turn
+    # Initial assistant message
+    first_msg = agent.respond(None)
+    print(f"Agent: {first_msg}")
+    agent.chat_history.append({"role": "assistant", "content": first_msg})
+    agent.save_session()
+    step = 0
+    while agent.current_step <= 7:
+        step += 1
+        print(f"========== Step {agent.current_step} Round {step} =========")
         user_in = input("You: ")
-        if user_in.lower() in ["exit", "quit"]: break
+        if user_in.lower() in ["exit", "quit"]:
+            break
         agent.chat_history.append({"role": "user", "content": user_in})
-        
-        # 3. Process Turn
-        if agent.extract_and_fill(user_in):
+
+        prev_step = agent.current_step
+        step_completed = agent.extract_and_fill(user_in)
+        if step_completed:
             print(f"✅ Step {agent.current_step} complete!")
+            step = 0
             agent.current_step += 1
-        
-        agent.save_session() # 及时保存
+
+        assistant_msg = agent.respond(user_in, step_completed=step_completed, step_before=prev_step)
+        print(f"Agent: {assistant_msg}")
+        agent.chat_history.append({"role": "assistant", "content": assistant_msg})
+
+        agent.turns.append({
+            "step_before": prev_step,
+            "step_after": agent.current_step,
+            "user": user_in,
+            "assistant": assistant_msg
+        })
+        agent.save_session()
+
+        if agent.current_step == 7:
+            # summary already generated in this turn
+            break
 
     print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")

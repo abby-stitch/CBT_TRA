@@ -1,0 +1,120 @@
+{
+  "session_id": "20260419_182222",
+  "last_updated": "2026-04-19 18:30:13",
+  "current_step": 5,
+  "thought_record": {
+    "date": "2026-04-19 18:22",
+    "situation": "I tried writing my resume.",
+    "emotion": "upset",
+    "intensity_before": 60,
+    "automatic_thought": "I'm terrible and I'll never find a job.",
+    "evidence_for": [
+      "I dont have real project to show."
+    ],
+    "evidence_against": [
+      "I'm patient and love learning."
+    ],
+    "distortions": [
+      "All-or-nothing thinking",
+      "Catastrophizing"
+    ],
+    "predicted_distortion": [
+      "All-or-nothing thinking",
+      "Catastrophizing"
+    ],
+    "balanced_thought": "",
+    "intensity_after": 0
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I can't write my resume. I'm terrible and I'll never find a job."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds really frustrating to be stuck on your resume.  Tell me, what happened when you tried to write it? Was there a specific event or part that made you feel this way?"
+    },
+    {
+      "role": "user",
+      "content": "I tried writing my resume. But I found I have nothing to mention on it"
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're feeling discouraged about your resume, especially when it feels like there's nothing to mention. Can you tell me what emotion this thought brings up for you? And how intense is that feeling on a scale of 0 to 100?"
+    },
+    {
+      "role": "user",
+      "content": "upset 60"
+    },
+    {
+      "role": "assistant",
+      "content": "Can you tell me some facts that support the thought, \"I'm terrible and I'll never find a job\"?  What has happened recently that makes you think this thought is true?"
+    },
+    {
+      "role": "user",
+      "content": "I dont have real project to show."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand feeling stuck without projects to mention.  Can you tell me about other experiences or skills you have that might be valuable, even if they're not formal projects?   Perhaps something from school, volunteering, or hobbies?"
+    },
+    {
+      "role": "user",
+      "content": "I have other skill and I'm patient and love learning."
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're recognizing your patience and love of learning as valuable qualities! It sounds like you might be focusing on a lack of projects while overlooking other strengths. \n\nDo you think this thought, \"I'm terrible and I'll never find a job,\" could be an example of all-or-nothing thinking? That means seeing things in extremes – either perfect success or total failure – without room for anything in between.  It could also be catastrophizing, where we imagine the worst possible outcome without much evidence to support it. \n\nDo any of these ideas resonate with you at all when considering your thought?"
+    },
+    {
+      "role": "user",
+      "content": "yes，I agree."
+    },
+    {
+      "role": "assistant",
+      "content": "That's helpful to hear! It sounds like you're starting to see how this thought might be influenced by thinking patterns.  This thought, “I’m terrible and I’ll never find a job,” could be an example of all-or-nothing thinking – seeing things as only success or complete failure – or catastrophizing, where we imagine the worst without much evidence. It also could involve negative filtering, focusing on one aspect (the lack of projects) while overlooking other strengths. Does any of this resonate with you?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I can't write my resume. I'm terrible and I'll never find a job.",
+      "assistant": "It sounds really frustrating to be stuck on your resume.  Tell me, what happened when you tried to write it? Was there a specific event or part that made you feel this way?"
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I tried writing my resume. But I found I have nothing to mention on it",
+      "assistant": "It sounds like you're feeling discouraged about your resume, especially when it feels like there's nothing to mention. Can you tell me what emotion this thought brings up for you? And how intense is that feeling on a scale of 0 to 100?"
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "upset 60",
+      "assistant": "Can you tell me some facts that support the thought, \"I'm terrible and I'll never find a job\"?  What has happened recently that makes you think this thought is true?"
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "I dont have real project to show.",
+      "assistant": "I understand feeling stuck without projects to mention.  Can you tell me about other experiences or skills you have that might be valuable, even if they're not formal projects?   Perhaps something from school, volunteering, or hobbies?"
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "I have other skill and I'm patient and love learning.",
+      "assistant": "That's great that you're recognizing your patience and love of learning as valuable qualities! It sounds like you might be focusing on a lack of projects while overlooking other strengths. \n\nDo you think this thought, \"I'm terrible and I'll never find a job,\" could be an example of all-or-nothing thinking? That means seeing things in extremes – either perfect success or total failure – without room for anything in between.  It could also be catastrophizing, where we imagine the worst possible outcome without much evidence to support it. \n\nDo any of these ideas resonate with you at all when considering your thought?"
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "yes，I agree.",
+      "assistant": "That's helpful to hear! It sounds like you're starting to see how this thought might be influenced by thinking patterns.  This thought, “I’m terrible and I’ll never find a job,” could be an example of all-or-nothing thinking – seeing things as only success or complete failure – or catastrophizing, where we imagine the worst without much evidence. It also could involve negative filtering, focusing on one aspect (the lack of projects) while overlooking other strengths. Does any of this resonate with you?"
+    }
+  ]
+}
