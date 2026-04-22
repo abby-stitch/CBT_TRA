@@ -3,7 +3,7 @@ import requests
 import re
 import os
 from datetime import datetime
-from prompts import CBTPrompts
+from prompts_1 import CBTPrompts
 
 class CBTAgent:
     def __init__(self, step=1, initial_record=None, model="gemma2:9b"):
@@ -27,7 +27,8 @@ class CBTAgent:
             "distortions": [], 
             "predicted_distortion": [],
             "balanced_thought": "", 
-            "intensity_after": 0
+            "intensity_after": 0,
+            "summary": ""
         }
         
         self.REQUIRED_FIELDS = {
@@ -37,7 +38,7 @@ class CBTAgent:
             4: ["distortions"],
             5: ["balanced_thought"],
             6: ["intensity_after"],
-            7: [] 
+            7: ["summary"] 
         }
 
     def _is_field_filled(self, field_name: str) -> bool:
@@ -206,7 +207,9 @@ TASK:
 Generate the final supportive summary now.
 Output only the counselor message.
 """
-            return self._call_llm(prompt, temperature=0.7)
+            summary = self._call_llm(prompt, temperature=0.7)
+            self.thought_record["summary"] = summary
+            return summary
 
         # Opening message
         if user_input is None:
@@ -293,9 +296,14 @@ TASK:
 3. If a field is already filled in CURRENT RECORD STATE, do NOT overwrite it.
 4. If user confirms something (e.g. "Yes", "Correct"), use CONTEXT to infer what they are confirming.
 5. Mapping rules:
-   - "emotion": MUST be a feeling word (e.g., upset, anxious, sad, angry, ashamed, frustrated). Do NOT treat self-judgment words as emotions (e.g., terrible, worthless, failure, stupid).
-     If the user does not provide a clear feeling word, leave "emotion" out.
+   - "emotion": store ONE primary feeling word.
+     Accept common emotion words and close variants (e.g., upset, anxious, nervous, sad, angry, ashamed, frustrated, disappointed, hurt, scared, overwhelmed).
+     Minor spelling mistakes are allowed if the intended meaning is clear (e.g., "anxiou" -> "anxious", "disapointed" -> "disappointed").
+     If the user gives multiple emotions, choose the main emotion most central to the distress in this turn.
+     If the user describes an emotional state indirectly but the meaning is clear, infer the closest feeling word.
+     Do NOT treat self-judgment words as emotions (e.g., terrible, worthless, failure, stupid).
      If the user explicitly says "I feel X" where X is a self-judgment, map it to "automatic_thought" instead.
+     Only leave "emotion" out if the intended feeling is truly unclear.
    - Self-judgment / interpretation / prediction belongs to "automatic_thought" (e.g., terrible, worthless, failure, "I'll never find a job", "Everyone else can").
    - "intensity_before"/"intensity_after": a number 0-100. If user replies only \"55\", treat it as the missing intensity for the current step.
    - "distortions": MUST be names/labels of distortions, not questions.

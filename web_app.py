@@ -332,6 +332,7 @@ def record_page(session_id: str) -> str:
         "distortions",
         "balanced_thought",
         "intensity_after",
+        "summary",
     ]:
         if k in record:
             rows.append(f"<tr><td>{k}</td><td>{fmt(record.get(k))}</td></tr>")
