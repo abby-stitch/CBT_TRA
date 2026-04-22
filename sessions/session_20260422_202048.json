@@ -1,0 +1,43 @@
+{
+  "session_id": "20260422_202048",
+  "last_updated": "2026-04-22 20:21:39",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_reason": null,
+  "thought_record": {
+    "date": "2026-04-22 20:20",
+    "situation": "",
+    "emotion": "overwhelmed",
+    "intensity_before": 0,
+    "automatic_thought": "I should stop living on ther world",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I so tired and I feel like there is no hope, I should stop living on ther world"
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like things are really tough right now. To get a clearer picture, can you tell me a bit about what happened to make you feel this way?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I so tired and I feel like there is no hope, I should stop living on ther world",
+      "assistant": "It sounds like things are really tough right now. To get a clearer picture, can you tell me a bit about what happened to make you feel this way?"
+    }
+  ]
+}

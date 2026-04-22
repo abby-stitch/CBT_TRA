@@ -1,0 +1,72 @@
+{
+  "session_id": "20260422_204336",
+  "last_updated": "2026-04-22 20:45:34",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "thought_record": {
+    "date": "2026-04-22 20:43",
+    "situation": "I just to tired to do my homework.",
+    "emotion": "",
+    "intensity_before": 75,
+    "automatic_thought": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I feel hopeless and tired"
+    },
+    {
+      "role": "assistant",
+      "content": "I want to check something important before we continue. When you say that, are you feeling unsafe or thinking about hurting yourself right now?"
+    },
+    {
+      "role": "user",
+      "content": "No, I just to tired to do my homework."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like doing your homework feels overwhelming right now. Can you tell me how intense that feeling is, on a scale of 0 to 100, with 0 being not at all intense and 100 being the most intense you can imagine?"
+    },
+    {
+      "role": "user",
+      "content": "75"
+    },
+    {
+      "role": "assistant",
+      "content": "That's helpful to know how intense it feels.  What's going through your mind when you feel that way about doing your homework? Like, what's the thought that pops up at that moment?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I feel hopeless and tired",
+      "assistant": "I want to check something important before we continue. When you say that, are you feeling unsafe or thinking about hurting yourself right now?"
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "No, I just to tired to do my homework.",
+      "assistant": "It sounds like doing your homework feels overwhelming right now. Can you tell me how intense that feeling is, on a scale of 0 to 100, with 0 being not at all intense and 100 being the most intense you can imagine?"
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "75",
+      "assistant": "That's helpful to know how intense it feels.  What's going through your mind when you feel that way about doing your homework? Like, what's the thought that pops up at that moment?"
+    }
+  ]
+}

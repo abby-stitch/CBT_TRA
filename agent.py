@@ -38,8 +38,20 @@ class CBTAgent:
             4: ["distortions"],
             5: ["balanced_thought"],
             6: ["intensity_after"],
-            7: ["summary"] 
+            7: ["summary"]
         }
+        self.session_status = "in_progress"
+        self.safety_reason = None
+        self.safety_state = "normal"
+        self.last_safety_warning_turn = 0
+        self.SAFETY_FALLBACK_PATTERNS = [
+            (r"\b(kill myself|suicide|suicidal|end my life|want to die|don't want to live|do not want to live|hurt myself|self[- ]harm|overdose|stop living|better off without me|not wake up)\b", "self_harm_risk"),
+            (r"(不想活|活不下去|想死|自杀|伤害自己|不如死了)", "self_harm_risk"),
+        ]
+
+    def _debug_log(self, tag: str, **data):
+        payload = " | ".join([f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in data.items()])
+        print(f"[DEBUG][{tag}] {payload}")
 
     def _is_field_filled(self, field_name: str) -> bool:
         val = self.thought_record.get(field_name)
@@ -157,6 +169,71 @@ TASK:
         except Exception as e:
             return f"Error: {e}"
 
+    def _semantic_safety_check(self, user_input: str) -> tuple[str, str | None]:
+        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
+        safety_prompt = CBTPrompts.safety_check()
+        prompt = f"""
+{safety_prompt}
+
+RECENT TURNS:
+{recent_turns}
+USER INPUT:
+{user_input}
+"""
+        raw = self._call_llm(prompt, temperature=0.1)
+        try:
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if match:
+                data = json.loads(re.sub(r",\s*\}", "}", match.group(0)))
+                risk = data.get("risk_level")
+                reason = data.get("reason")
+                if risk in {"normal", "supportive_warning", "acute_warning"}:
+                    self._debug_log("SAFETY_CHECK", source="llm", risk=risk, reason=reason, user_input=user_input)
+                    return risk, reason
+        except Exception:
+            pass
+
+        text = user_input.lower()
+        for pattern, _ in self.SAFETY_FALLBACK_PATTERNS:
+            if re.search(pattern, text):
+                self._debug_log("SAFETY_CHECK", source="fallback", risk="acute_warning", reason="fallback pattern matched acute-risk phrase", user_input=user_input)
+                return "acute_warning", "fallback pattern matched acute-risk phrase"
+        self._debug_log("SAFETY_CHECK", source="default", risk="normal", reason=None, user_input=user_input)
+        return "normal", None
+
+    def _should_include_safety_note(self, risk_level: str) -> bool:
+        if risk_level == "acute_warning":
+            return True
+        if risk_level != "supportive_warning":
+            return False
+        if self.last_safety_warning_turn == 0:
+            return True
+        return (len(self.turns) - self.last_safety_warning_turn) >= 2
+
+    def _reset_safety_memory_if_normal(self, risk_level: str):
+        if risk_level == "normal":
+            self.safety_state = "normal"
+            self.safety_reason = None
+            self.last_safety_warning_turn = 0
+
+    def _support_guidance_line(self, risk_level: str) -> str:
+        if risk_level == "acute_warning":
+            return "If you might be unsafe right now, please reach out to a trusted person, local emergency help, or professional support as soon as you can."
+        if risk_level == "supportive_warning":
+            return "If these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
+        return ""
+
+    def _ensure_support_guidance(self, message: str, risk_level: str, include_safety_note: bool) -> str:
+        if not include_safety_note:
+            return message
+        guidance = self._support_guidance_line(risk_level)
+        if not guidance:
+            return message
+        lowered = message.lower()
+        if any(token in lowered for token in ["professional support", "someone you trust", "trusted person", "emergency help"]):
+            return message
+        return f"{message}\n\n{guidance}"
+
     def save_session(self):
         """Persist session data after each turn to avoid data loss."""
         # Ensure sessions directory exists
@@ -166,6 +243,10 @@ TASK:
             "session_id": self.session_id,
             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "current_step": self.current_step,
+            "session_status": self.session_status,
+            "safety_state": self.safety_state,
+            "safety_reason": self.safety_reason,
+            "last_safety_warning_turn": self.last_safety_warning_turn,
             "thought_record": self.thought_record,
             "chat_history": self.chat_history,
             "turns": self.turns
@@ -173,8 +254,9 @@ TASK:
         file_path = f"sessions/session_{self.session_id}.json"
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(session_data, f, indent=2, ensure_ascii=False)
+        self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
 
-    def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None) -> str:
+    def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None, risk_level: str = "normal", safety_reason: str | None = None, include_safety_note: bool = False) -> str:
         """
         Single response function:
         - Explain when needed, then ask naturally.
@@ -209,6 +291,7 @@ Output only the counselor message.
 """
             summary = self._call_llm(prompt, temperature=0.7)
             self.thought_record["summary"] = summary
+            self.session_status = "completed"
             return summary
 
         # Opening message
@@ -226,6 +309,20 @@ Do NOT continue discussing Step {step_before_val}. Briefly acknowledge and ask t
 
         predicted_block = ""
         step4_block = ""
+        safety_block = ""
+        if risk_level != "normal":
+            safety_block = f"""
+---
+SAFETY CONTEXT:
+- risk_level: {risk_level}
+- reason: {safety_reason}
+- include_safety_note_this_turn: {include_safety_note}
+- If include_safety_note_this_turn is true, include 1-2 warm, natural sentences acknowledging pain.
+- If include_safety_note_this_turn is true, you should also explicitly encourage the user to seek trusted or professional support if they may be unsafe.
+- Do NOT use fixed template wording for the whole reply. Vary the phrasing naturally based on the user's message.
+- If include_safety_note_this_turn is false, do NOT repeat the previous safety reminder.
+- If risk_level is acute_warning, output only the supportive safety-focused reply for this turn and do not continue the CBT task.
+"""
         if self.current_step == 4:
             predicted_block = f"""
 ---
@@ -258,6 +355,7 @@ LATEST USER MESSAGE:
 MISSING FIELDS FOR CURRENT STEP:
 {missing}
 {predicted_block}
+{safety_block}
 
 TASK:
 1. Produce ONE natural counselor response for this turn.
@@ -269,6 +367,49 @@ TASK:
 5. Output only the counselor message.
 """
         return self._call_llm(prompt, temperature=0.7)
+
+    def process_user_turn(self, user_input: str) -> dict:
+        self.chat_history.append({"role": "user", "content": user_input})
+        prev_step = self.current_step
+        self._debug_log("TURN_START", session_id=self.session_id, step_before=prev_step, user_input=user_input)
+        risk, reason = self._semantic_safety_check(user_input)
+        self.safety_state = risk
+        self.safety_reason = reason
+        self._reset_safety_memory_if_normal(risk)
+        include_safety_note = self._should_include_safety_note(self.safety_state)
+        self._debug_log("TURN_SAFETY", risk=self.safety_state, reason=self.safety_reason, include_safety_note=include_safety_note, last_safety_warning_turn=self.last_safety_warning_turn)
+
+        step_completed = False
+        if risk != "acute_warning":
+            step_completed = self.extract_and_fill(user_input)
+            if step_completed:
+                self.current_step += 1
+
+        assistant_msg = self.respond(
+            user_input,
+            step_completed=step_completed,
+            step_before=prev_step,
+            risk_level=risk,
+            safety_reason=reason,
+            include_safety_note=include_safety_note,
+        )
+        assistant_msg = self._ensure_support_guidance(assistant_msg, risk, include_safety_note)
+        if self.safety_state != "normal" and include_safety_note:
+            self.last_safety_warning_turn = len(self.turns) + 1
+
+        self._debug_log("TURN_RESULT", step_before=prev_step, step_after=self.current_step, step_completed=step_completed, session_status=self.session_status, safety_state=self.safety_state, assistant_msg=assistant_msg)
+        self.chat_history.append({"role": "assistant", "content": assistant_msg})
+        self.turns.append({
+            "step_before": prev_step,
+            "step_after": self.current_step,
+            "user": user_input,
+            "assistant": assistant_msg,
+            "risk_state": self.safety_state,
+            "risk_reason": self.safety_reason,
+            "include_safety_note": include_safety_note,
+        })
+        self.save_session()
+        return {"message": assistant_msg, "step_completed": step_completed, "session_completed": self.session_status != "in_progress"}
 
     def extract_and_fill(self, user_input):
         """Context-aware extraction logic."""
@@ -382,7 +523,10 @@ if __name__ == "__main__":
             "step_before": prev_step,
             "step_after": agent.current_step,
             "user": user_in,
-            "assistant": assistant_msg
+            "assistant": assistant_msg,
+            "risk_state": getattr(agent, "safety_state", "normal"),
+            "risk_reason": getattr(agent, "safety_reason", None),
+            "include_safety_note": False,
         })
         agent.save_session()
 

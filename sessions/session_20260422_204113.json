@@ -1,0 +1,44 @@
+{
+  "session_id": "20260422_204113",
+  "last_updated": "2026-04-22 20:41:28",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_state": "check",
+  "safety_reason": "Hopelessness can be a sign of risk",
+  "thought_record": {
+    "date": "2026-04-22 20:41",
+    "situation": "",
+    "emotion": "",
+    "intensity_before": 0,
+    "automatic_thought": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I feel hopeless and tired"
+    },
+    {
+      "role": "assistant",
+      "content": "I want to check something important before we continue. When you say that, are you feeling unsafe or thinking about hurting yourself right now?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I feel hopeless and tired",
+      "assistant": "I want to check something important before we continue. When you say that, are you feeling unsafe or thinking about hurting yourself right now?"
+    }
+  ]
+}

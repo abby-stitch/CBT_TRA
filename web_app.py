@@ -262,27 +262,13 @@ def message(req: MessageRequest) -> MessageResponse:
     if agent is None:
         raise HTTPException(status_code=404, detail="Unknown session_id")
     if req.session_id in _completed_sessions:
-        raise HTTPException(status_code=409, detail="This session is already completed.")
+        raise HTTPException(status_code=409, detail="This session is already closed.")
 
-    agent.chat_history.append({"role": "user", "content": req.message})
-    prev_step = agent.current_step
-    step_completed = agent.extract_and_fill(req.message)
-    if step_completed:
-        agent.current_step += 1
-    assistant_msg = agent.respond(req.message, step_completed=step_completed, step_before=prev_step)
-    agent.chat_history.append({"role": "assistant", "content": assistant_msg})
-    agent.turns.append(
-        {
-            "step_before": prev_step,
-            "step_after": agent.current_step,
-            "user": req.message,
-            "assistant": assistant_msg,
-        }
-    )
-    agent.save_session()
-
-    session_completed = agent.current_step == 7
-    record_url = f"/record/{agent.session_id}" if session_completed else None
+    result = agent.process_user_turn(req.message)
+    assistant_msg = result["message"]
+    step_completed = result["step_completed"]
+    session_completed = result["session_completed"]
+    record_url = f"/record/{agent.session_id}" if agent.session_status == "completed" else None
     if session_completed:
         global _active_session_id
         _completed_sessions.add(agent.session_id)
@@ -302,16 +288,18 @@ def message(req: MessageRequest) -> MessageResponse:
 
 @app.get("/record/{session_id}", response_class=HTMLResponse)
 def record_page(session_id: str) -> str:
-    if session_id not in _completed_sessions:
-        raise HTTPException(status_code=403, detail="Session not completed.")
     agent = _agents.get(session_id)
     if agent is None:
         p = Path("sessions") / f"session_{session_id}.json"
         if not p.exists():
             raise HTTPException(status_code=404, detail="Session not found.")
         data = json.loads(p.read_text(encoding="utf-8"))
+        if data.get("session_status") != "completed":
+            raise HTTPException(status_code=403, detail="Session not completed.")
         record = data.get("thought_record", {})
     else:
+        if agent.session_status != "completed":
+            raise HTTPException(status_code=403, detail="Session not completed.")
         record = agent.thought_record
 
     def fmt(v: Any) -> str:
