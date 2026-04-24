@@ -1,0 +1,181 @@
+{
+  "session_id": "20260424_172104",
+  "last_updated": "2026-04-24 17:32:27",
+  "current_step": 7,
+  "session_status": "completed",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "thought_record": {
+    "date": "2026-04-24 17:21",
+    "situation": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos.",
+    "emotion": "worthless",
+    "intensity_before": 70,
+    "automatic_thought": "I have no value.",
+    "evidence_for": [
+      "I can not realize the fuction using multi-dimension tables",
+      "It takes time to understand and use those function",
+      "Besides, this morning I made a mistake to give the information which is very important not to give others to a co-worker"
+    ],
+    "evidence_against": [
+      "I help other interns do the tests"
+    ],
+    "distortions": [
+      "All-or-nothing thinking",
+      "Magnification/minimization",
+      "Emotional reasoning"
+    ],
+    "predicted_distortion": [
+      "All-or-nothing thinking",
+      "Magnification/minimization",
+      "Emotional reasoning"
+    ],
+    "balanced_thought": "I'm new here and still learning, so it makes sense that I'm facing some challenges. It takes time to grow and understand a new role.  I can be kind to myself and focus on making progress instead of being too hard on myself.",
+    "intensity_after": 60,
+    "summary": "It sounds like you've done some great work identifying your challenging thoughts and feelings during this internship. It's understandable to feel overwhelmed when starting something new, especially with a lot to learn. You recognized how your \"I have no value\" thought might be influenced by all-or-nothing thinking, magnification/minimization, and emotional reasoning. Shifting your perspective to one of kindness and progress – acknowledging that learning takes time – helped lower the intensity of those feelings. Keep practicing these thought-record skills; they can be incredibly helpful in navigating tough situations!"
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I feel like i have no value."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds really painful to feel that way. Can you tell me a bit about what's been happening lately?"
+    },
+    {
+      "role": "user",
+      "content": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really overwhelming to be in that situation, especially during your first internship. On a scale of 0 to 100, with 0 being not at all and 100 being extremely intense, how overwhelmed were you feeling in that moment?"
+    },
+    {
+      "role": "user",
+      "content": "70"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, so you were feeling pretty overwhelmed at 70 out of 100. Can you tell me about some things that happened during your internship that might be making you feel this way?  What kind of evidence supports the thought \"I have no value\"?"
+    },
+    {
+      "role": "user",
+      "content": "I can not realize the fuction using multi-dimension tables, and I'm new with the fuctions. It takes time to understand and use those function, like automatic workflow. Besides, this morning I made a mistake to give the information which is very important not to give others to a co-worker."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like there's been a lot to learn in your internship so far. Can you think of anything that might challenge the idea that you have no value?  Maybe something you did well or are learning about, even if it's challenging?"
+    },
+    {
+      "role": "user",
+      "content": "I help other interns do the tests, but maybe it is not that helpful."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're downplaying your help to other interns.  Could any of these fit how you're feeling: all-or-nothing thinking, where you feel if something isn't perfect it has no value? Or magnification/minimization, where you focus on the small mistake and downplay the positive? Maybe emotional reasoning, where you let your feelings about being inadequate drive your thoughts?  Do any of those resonate with you at all?"
+    },
+    {
+      "role": "user",
+      "content": "I think all of them."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like those distortions could really be contributing to how you're feeling.  Now, thinking about that thought “I have no value”, can you try coming up with a balanced thought that considers both the evidence you gave for and against it?  What might be a more realistic way to look at this situation?"
+    },
+    {
+      "role": "user",
+      "content": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can udnertake the responsibility, so I should be brave to learn, don't look down yourself, abby."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a helpful and balanced thought, Abby.  How intense are those feelings of worthlessness now compared to before?"
+    },
+    {
+      "role": "user",
+      "content": "60"
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you've done some great work identifying your challenging thoughts and feelings during this internship. It's understandable to feel overwhelmed when starting something new, especially with a lot to learn. You recognized how your \"I have no value\" thought might be influenced by all-or-nothing thinking, magnification/minimization, and emotional reasoning. Shifting your perspective to one of kindness and progress – acknowledging that learning takes time – helped lower the intensity of those feelings. Keep practicing these thought-record skills; they can be incredibly helpful in navigating tough situations!"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I feel like i have no value.",
+      "assistant": "It sounds really painful to feel that way. Can you tell me a bit about what's been happening lately?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos.",
+      "assistant": "That sounds really overwhelming to be in that situation, especially during your first internship. On a scale of 0 to 100, with 0 being not at all and 100 being extremely intense, how overwhelmed were you feeling in that moment?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "70",
+      "assistant": "Okay, so you were feeling pretty overwhelmed at 70 out of 100. Can you tell me about some things that happened during your internship that might be making you feel this way?  What kind of evidence supports the thought \"I have no value\"?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "I can not realize the fuction using multi-dimension tables, and I'm new with the fuctions. It takes time to understand and use those function, like automatic workflow. Besides, this morning I made a mistake to give the information which is very important not to give others to a co-worker.",
+      "assistant": "It sounds like there's been a lot to learn in your internship so far. Can you think of anything that might challenge the idea that you have no value?  Maybe something you did well or are learning about, even if it's challenging?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "I help other interns do the tests, but maybe it is not that helpful.",
+      "assistant": "It sounds like you're downplaying your help to other interns.  Could any of these fit how you're feeling: all-or-nothing thinking, where you feel if something isn't perfect it has no value? Or magnification/minimization, where you focus on the small mistake and downplay the positive? Maybe emotional reasoning, where you let your feelings about being inadequate drive your thoughts?  Do any of those resonate with you at all?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "I think all of them.",
+      "assistant": "It sounds like those distortions could really be contributing to how you're feeling.  Now, thinking about that thought “I have no value”, can you try coming up with a balanced thought that considers both the evidence you gave for and against it?  What might be a more realistic way to look at this situation?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 5,
+      "step_after": 6,
+      "user": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can udnertake the responsibility, so I should be brave to learn, don't look down yourself, abby.",
+      "assistant": "That sounds like a helpful and balanced thought, Abby.  How intense are those feelings of worthlessness now compared to before?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 6,
+      "step_after": 7,
+      "user": "60",
+      "assistant": "It sounds like you've done some great work identifying your challenging thoughts and feelings during this internship. It's understandable to feel overwhelmed when starting something new, especially with a lot to learn. You recognized how your \"I have no value\" thought might be influenced by all-or-nothing thinking, magnification/minimization, and emotional reasoning. Shifting your perspective to one of kindness and progress – acknowledging that learning takes time – helped lower the intensity of those feelings. Keep practicing these thought-record skills; they can be incredibly helpful in navigating tough situations!",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

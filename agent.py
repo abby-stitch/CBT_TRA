@@ -491,7 +491,7 @@ TASK:
                     self.thought_record[k] = v
 
 if __name__ == "__main__":
-    agent = CBTAgentTest(step=1)
+    agent = CBTAgent(step=1)
     print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
 
     # Initial assistant message
