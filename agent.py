@@ -3,7 +3,8 @@ import requests
 import re
 import os
 from datetime import datetime
-from prompts_1 import CBTPrompts
+from prompts import CBTPrompts
+from knowledge_base import DistortionKnowledge
 
 class CBTAgent:
     def __init__(self, step=1, initial_record=None, model="gemma2:9b"):
@@ -112,54 +113,54 @@ TASK:
         except Exception:
             return []
 
-    def _field_ask_spec(self, field_name: str) -> str:
-        specs = {
-            "situation": "Ask what happened / what the specific situation was. One sentence is enough.",
-            "emotion": "Ask for a feeling word (e.g., upset, anxious, sad).",
-            "intensity_before": "Ask for a 0–100 rating of the emotion at its peak.",
-            "automatic_thought": "Ask for the specific thought/image at the worst moment (the 'hot thought').",
-            "evidence_for": "Ask for factual evidence supporting the thought (facts, not feelings).",
-            "evidence_against": "Ask for factual evidence against the thought (facts that don't fit it).",
-            "distortions": "First propose 1–3 likely distortion labels, then ask the user which ones fit (use tentative language).",
-            "balanced_thought": "Ask for a more balanced, realistic alternative thought (not overly positive).",
-            "intensity_after": "Ask for a 0–100 rating of the original emotion now.",
-        }
-        return specs.get(field_name, f"Ask for: {field_name}")
+    # def _field_ask_spec(self, field_name: str) -> str:
+    #     specs = {
+    #         "situation": "Ask what happened / what the specific situation was. One sentence is enough.",
+    #         "emotion": "Ask for a feeling word (e.g., upset, anxious, sad).",
+    #         "intensity_before": "Ask for a 0–100 rating of the emotion at its peak.",
+    #         "automatic_thought": "Ask for the specific thought/image at the worst moment (the 'hot thought').",
+    #         "evidence_for": "Ask for factual evidence supporting the thought (facts, not feelings).",
+    #         "evidence_against": "Ask for factual evidence against the thought (facts that don't fit it).",
+    #         "distortions": "First propose 1–3 likely distortion labels, then ask the user which ones fit (use tentative language).",
+    #         "balanced_thought": "Ask for a more balanced, realistic alternative thought (not overly positive).",
+    #         "intensity_after": "Ask for a 0–100 rating of the original emotion now.",
+    #     }
+    #     return specs.get(field_name, f"Ask for: {field_name}")
 
-    def _ask_with_llm(self, missing_fields):
-        system_p = CBTPrompts.system()
-        step_p = getattr(CBTPrompts, f"step{self.current_step}")()
-        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
-        missing_specs = "\n".join([f"- {f}: {self._field_ask_spec(f)}" for f in missing_fields])
-        recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
-
-        prompt = f"""
-{system_p}
----
-CURRENT STEP: {self.current_step}
-STEP RULES:
-{step_p}
----
-CURRENT RECORD STATE:
-{current_record_json}
----
-RECENT TURNS:
-{recent_turns}
----
-MISSING FIELDS (ask ONLY for these):
-{missing_fields}
-
-FIELD-SPECIFIC GUIDANCE:
-{missing_specs}
-
-TASK:
-1. Write ONE warm, clear question to obtain the missing field(s).
-2. Do NOT ask for anything already present in CURRENT RECORD STATE.
-3. If both emotion and intensity_before are missing, ask them together in one question.
-4. Otherwise, ask for ONLY ONE missing field at a time (choose the most important).
-5. Output ONLY the question (no explanation, no JSON, no markdown).
-"""
-        return self._call_llm(prompt, temperature=0.7)
+    # def _ask_with_llm(self, missing_fields):
+    #     system_p = CBTPrompts.system()
+    #     step_p = getattr(CBTPrompts, f"step{self.current_step}")()
+    #     current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+    #     missing_specs = "\n".join([f"- {f}: {self._field_ask_spec(f)}" for f in missing_fields])
+    #     recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
+    #
+    #     prompt = f"""
+    # {system_p}
+    # ---
+    # CURRENT STEP: {self.current_step}
+    # STEP RULES:
+    # {step_p}
+    # ---
+    # CURRENT RECORD STATE:
+    # {current_record_json}
+    # ---
+    # RECENT TURNS:
+    # {recent_turns}
+    # ---
+    # MISSING FIELDS (ask ONLY for these):
+    # {missing_fields}
+    #
+    # FIELD-SPECIFIC GUIDANCE:
+    # {missing_specs}
+    #
+    # TASK:
+    # 1. Write ONE warm, clear question to obtain the missing field(s).
+    # 2. Do NOT ask for anything already present in CURRENT RECORD STATE.
+    # 3. If both emotion and intensity_before are missing, ask them together in one question.
+    # 4. Otherwise, ask for ONLY ONE missing field at a time (choose the most important).
+    # 5. Output ONLY the question (no explanation, no JSON, no markdown).
+    # """
+    #     return self._call_llm(prompt, temperature=0.7)
 
     def _call_llm(self, prompt, temperature=0.7):
         payload = {"model": self.model, "prompt": prompt, "stream": False, "temperature": temperature}
@@ -434,7 +435,9 @@ NEW USER INPUT: "{user_input}"
 TASK:
 1. Extract info for ANY CBT field in the thought record.
 2. PRIORITY: Since we are in Step {self.current_step}, focus on extracting these fields if present: {required_now}.
-3. If a field is already filled in CURRENT RECORD STATE, do NOT overwrite it.
+3. Default: do NOT overwrite fields that are already filled in CURRENT RECORD STATE.
+   Exception: if the user's message is clearly correcting previous info (e.g., "Correction:", "Actually", "Not X, it was Y"), you MAY overwrite.
+   If overwriting, you MUST include: "overwrite_fields": ["field1", "field2"] listing exactly which fields are being corrected.
 4. If user confirms something (e.g. "Yes", "Correct"), use CONTEXT to infer what they are confirming.
 5. Mapping rules:
    - "emotion": store ONE primary feeling word.
@@ -460,7 +463,20 @@ TASK:
             if match:
                 json_str = re.sub(r',\s*\}', '}', match.group(0))
                 data = json.loads(json_str)
-                self.update_record(data)
+                overwrite_fields = data.pop("overwrite_fields", None) or data.pop("_overwrite_fields", None) or []
+                data.pop("edit_intent", None)
+
+                allow_overwrite_fields: set[str] = set()
+                if isinstance(overwrite_fields, str):
+                    overwrite_fields = [overwrite_fields]
+                if isinstance(overwrite_fields, list):
+                    allow_overwrite_fields = {
+                        str(f).strip()
+                        for f in overwrite_fields
+                        if isinstance(f, (str, int, float)) and str(f).strip() in self.thought_record and str(f).strip() != "date"
+                    }
+
+                self.update_record(data, allow_overwrite_fields=allow_overwrite_fields)
         except Exception as e:
             print(f"[ERROR] Extraction failed: {e}\nRaw: {raw_json}")
         
@@ -478,60 +494,143 @@ TASK:
             if isinstance(val, str) and not val.strip(): return False
         return True
 
-    def update_record(self, data):
+    def _distortion_label_set(self) -> set[str]:
+        text = DistortionKnowledge.get_full_distortions()
+        labels: set[str] = set()
+        for line in text.splitlines():
+            m = re.match(r"^\s*\d+\.\s*(.+?)\s*$", line)
+            if m:
+                labels.add(m.group(1).strip())
+        return labels
+
+    def _normalize_list_str(self, value) -> list[str]:
+        items = value if isinstance(value, list) else [value]
+        out: list[str] = []
+        for item in items:
+            if item is None:
+                continue
+            s = str(item).strip()
+            if not s:
+                continue
+            parts = [p.strip() for p in re.split(r"[;\n]+", s) if p.strip()]
+            out.extend(parts)
+
+        dedup: list[str] = []
+        seen: set[str] = set()
+        for x in out:
+            if x not in seen:
+                dedup.append(x)
+                seen.add(x)
+        return dedup
+
+    def _normalize_field(self, field: str, value):
+        if value is None:
+            return None
+
+        if field in {"intensity_before", "intensity_after"}:
+            if isinstance(value, (int, float)):
+                n = int(value)
+            else:
+                m = re.search(r"-?\d+", str(value))
+                if not m:
+                    return None
+                n = int(m.group(0))
+            return max(0, min(100, n))
+
+        if field == "emotion":
+            s = str(value).strip()
+            if not s:
+                return None
+            s = re.sub(r"\s+", " ", s)
+            if " " in s:
+                s = s.split(" ", 1)[0]
+            return s
+
+        if field in {"situation", "automatic_thought", "balanced_thought", "summary"}:
+            s = str(value).strip()
+            return s if s else None
+
+        if field in {"evidence_for", "evidence_against"}:
+            items = self._normalize_list_str(value)
+            return items if items else None
+
+        if field in {"distortions", "predicted_distortion"}:
+            items = self._normalize_list_str(value)
+            labels = self._distortion_label_set()
+            filtered = [x for x in items if x in labels]
+            return filtered if filtered else None
+
+        return None
+
+    def update_record(self, data: dict, allow_overwrite_fields: set[str] | None = None):
+        allow = allow_overwrite_fields or set()
         for k, v in data.items():
-            if not v: continue
-            if k in self.thought_record:
-                if isinstance(self.thought_record[k], list):
-                    new_items = v if isinstance(v, list) else [v]
-                    for item in new_items:
-                        if item and item not in self.thought_record[k]:
-                            self.thought_record[k].append(item)
-                elif not self.thought_record[k] or self.thought_record[k] == 0:
-                    self.thought_record[k] = v
+            if k not in self.thought_record:
+                continue
 
-if __name__ == "__main__":
-    agent = CBTAgent(step=1)
-    print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
+            normalized = self._normalize_field(k, v)
+            if normalized is None:
+                continue
 
-    # Initial assistant message
-    first_msg = agent.respond(None)
-    print(f"Agent: {first_msg}")
-    agent.chat_history.append({"role": "assistant", "content": first_msg})
-    agent.save_session()
-    step = 0
-    while agent.current_step <= 7:
-        step += 1
-        print(f"========== Step {agent.current_step} Round {step} =========")
-        user_in = input("You: ")
-        if user_in.lower() in ["exit", "quit"]:
-            break
-        agent.chat_history.append({"role": "user", "content": user_in})
+            current = self.thought_record.get(k)
+            if isinstance(current, list):
+                if k in allow:
+                    self.thought_record[k] = normalized if isinstance(normalized, list) else self._normalize_list_str(normalized)
+                    continue
 
-        prev_step = agent.current_step
-        step_completed = agent.extract_and_fill(user_in)
-        if step_completed:
-            print(f"✅ Step {agent.current_step} complete!")
-            step = 0
-            agent.current_step += 1
+                new_items = normalized if isinstance(normalized, list) else self._normalize_list_str(normalized)
+                for item in new_items:
+                    if item and item not in current:
+                        current.append(item)
+                continue
 
-        assistant_msg = agent.respond(user_in, step_completed=step_completed, step_before=prev_step)
-        print(f"Agent: {assistant_msg}")
-        agent.chat_history.append({"role": "assistant", "content": assistant_msg})
+            if k in allow:
+                self.thought_record[k] = normalized
+                continue
 
-        agent.turns.append({
-            "step_before": prev_step,
-            "step_after": agent.current_step,
-            "user": user_in,
-            "assistant": assistant_msg,
-            "risk_state": getattr(agent, "safety_state", "normal"),
-            "risk_reason": getattr(agent, "safety_reason", None),
-            "include_safety_note": False,
-        })
-        agent.save_session()
+            if not current or current == 0:
+                self.thought_record[k] = normalized
 
-        if agent.current_step == 7:
-            # summary already generated in this turn
-            break
-
-    print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")
+# if __name__ == "__main__":
+#     agent = CBTAgent(step=1)
+#     print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
+#
+#     first_msg = agent.respond(None)
+#     print(f"Agent: {first_msg}")
+#     agent.chat_history.append({"role": "assistant", "content": first_msg})
+#     agent.save_session()
+#     step = 0
+#     while agent.current_step <= 7:
+#         step += 1
+#         print(f"========== Step {agent.current_step} Round {step} =========")
+#         user_in = input("You: ")
+#         if user_in.lower() in ["exit", "quit"]:
+#             break
+#         agent.chat_history.append({"role": "user", "content": user_in})
+#
+#         prev_step = agent.current_step
+#         step_completed = agent.extract_and_fill(user_in)
+#         if step_completed:
+#             print(f"✅ Step {agent.current_step} complete!")
+#             step = 0
+#             agent.current_step += 1
+#
+#         assistant_msg = agent.respond(user_in, step_completed=step_completed, step_before=prev_step)
+#         print(f"Agent: {assistant_msg}")
+#         agent.chat_history.append({"role": "assistant", "content": assistant_msg})
+#
+#         agent.turns.append({
+#             "step_before": prev_step,
+#             "step_after": agent.current_step,
+#             "user": user_in,
+#             "assistant": assistant_msg,
+#             "risk_state": getattr(agent, "safety_state", "normal"),
+#             "risk_reason": getattr(agent, "safety_reason", None),
+#             "include_safety_note": False,
+#         })
+#         agent.save_session()
+#
+#         if agent.current_step == 7:
+#             break
+#
+#     print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")

@@ -1,0 +1,11 @@
+[project]
+name = "tra-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.136.1",
+    "pydantic>=2.13.3",
+    "uvicorn>=0.46.0",
+]
