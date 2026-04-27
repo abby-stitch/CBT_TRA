@@ -1,0 +1,198 @@
+{
+  "session_id": "20260427_223447",
+  "last_updated": "2026-04-27 22:57:56",
+  "current_step": 7,
+  "session_status": "completed",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "thought_record": {
+    "date": "2026-04-27 22:34",
+    "situation": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos.",
+    "emotion": "disappointed",
+    "intensity_before": 70,
+    "automatic_thought": "I have no value.",
+    "evidence_for": [
+      "I could not realize the function using multi-dimension tables.",
+      "I am new with the functions and it takes time to understand them.",
+      "I made a mistake this morning and gave important information to a co-worker who should not have received it."
+    ],
+    "evidence_against": [
+      "I help other interns do the tests"
+    ],
+    "distortions": [
+      "Labeling",
+      "All-or-nothing thinking",
+      "Magnification/minimization"
+    ],
+    "predicted_distortion": [
+      "Labeling",
+      "All-or-nothing thinking",
+      "Magnification/minimization"
+    ],
+    "balanced_thought": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can undertake the responsibility, so I should be brave to learn, don't look down yourself, abby.",
+    "intensity_after": 60,
+    "summary": "Okay, Abby, let's wrap things up. It sounds like today’s situation at your internship brought up a lot of disappointment – a 70 out of 100 initially. We explored how the thought “I have no value” came up, and looked at evidence both for and against that belief. It was helpful to identify those thinking patterns – labeling, all-or-nothing thinking, and magnification – that were contributing to how strong that feeling was. \n\nYou then came up with a more balanced thought: acknowledging that you’re new, still learning, and need to give yourself space to grow. That’s great self-compassion. It looks like that shift helped bring your intensity down to a 60. \n\nYou did a lot of work today to untangle this, and it’s a good first step in recognizing and challenging those automatic negative thoughts. Remember you’re still growing, and it’s okay to not have all the answers right away."
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I feel like i have no value."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're going through a really difficult time, and feeling like you have no value is incredibly painful. If you're feeling unsafe or like you might harm yourself, please reach out to someone you trust or a professional for support. There are people who care and want to help.\n\nTo help me understand what's going on, could you tell me about the situation that led you to feeling this way? What happened?"
+    },
+    {
+      "role": "user",
+      "content": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really challenging, starting a new internship and feeling like you're not making a helpful contribution. To get a clearer picture, could you tell me what emotion you felt most strongly in that moment – perhaps anxious, frustrated, or something else? Also, on a scale of 0 to 100, how strong did that feeling feel at its peak?"
+    },
+    {
+      "role": "user",
+      "content": "70"
+    },
+    {
+      "role": "assistant",
+      "content": "It makes sense that feeling like you created chaos would be upsetting. To help me understand things a little better, could you tell me what emotion you felt most strongly when you realized you weren't sure how to help – perhaps anxious, frustrated, or something else? You can use your own words if none of those quite fit."
+    },
+    {
+      "role": "user",
+      "content": "disappointed"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, thanks for sharing that. It’s tough when an internship doesn’t go as planned.\n\nTo help get a clearer picture, could you share some specific things that happened that made you think you had no value – just facts or observations, if you can? What exactly led you to that conclusion?"
+    },
+    {
+      "role": "user",
+      "content": "I can not realize the fuction using multi-dimension tables, and I'm new with the fuctions. It takes time to understand and use those function, like automatic workflow. Besides, this morning I made a mistake to give the information which is very important not to give others to a co-worker."
+    },
+    {
+      "role": "assistant",
+      "content": "It's understandable that struggling with those functions and making a mistake with the information feels discouraging. Now, to get a bit more balanced, what facts suggest that thought – “I have no value” – might not be 100% true? Even small things can be helpful here."
+    },
+    {
+      "role": "user",
+      "content": "I help other interns do the tests, but maybe it is not that helpful."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're being hard on yourself, and it's great that you're able to identify things you *are* doing, even while feeling down.\n\nThinking about the thought “I have no value,” I wonder if any of these patterns might be playing a role? Sometimes when we're feeling upset, our thoughts can get a little distorted. \n\n* **Labeling** might be happening if you're applying a broad, negative label to yourself (\"I have no value\") instead of focusing on specific actions.\n* **All-or-nothing thinking** could be present if you see things as either perfect or a complete failure, with no middle ground.\n* **Magnification/minimization** sometimes shows up when we blow things out of proportion—focusing on mistakes while downplaying our strengths.\n\nDo any of those resonate with how you're thinking, or perhaps something else is going on?"
+    },
+    {
+      "role": "user",
+      "content": "I think all of them"
+    },
+    {
+      "role": "assistant",
+      "content": "It makes sense that those distortions are all showing up – it sounds like you’re putting a lot of pressure on yourself. \n\nGiven what we’ve discussed – the things you’ve been able to do, and also the challenges you’re facing – what’s a more balanced way to look at the situation? What thought might acknowledge both your difficulties *and* your contributions, rather than jumping to “I have no value”?"
+    },
+    {
+      "role": "user",
+      "content": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can udnertake the responsibility, so I should be brave to learn, don't look down yourself, abby."
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really thoughtful and kind way to reframe things for yourself. Now, thinking back to that initial feeling of disappointment, how strong is it *now*, after working through these steps? If you had to give it a rating from 0 to 100, with 0 being not at all and 100 being the strongest it was, what number would you choose?"
+    },
+    {
+      "role": "user",
+      "content": "60"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, Abby, let's wrap things up. It sounds like today’s situation at your internship brought up a lot of disappointment – a 70 out of 100 initially. We explored how the thought “I have no value” came up, and looked at evidence both for and against that belief. It was helpful to identify those thinking patterns – labeling, all-or-nothing thinking, and magnification – that were contributing to how strong that feeling was. \n\nYou then came up with a more balanced thought: acknowledging that you’re new, still learning, and need to give yourself space to grow. That’s great self-compassion. It looks like that shift helped bring your intensity down to a 60. \n\nYou did a lot of work today to untangle this, and it’s a good first step in recognizing and challenging those automatic negative thoughts. Remember you’re still growing, and it’s okay to not have all the answers right away."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I feel like i have no value.",
+      "assistant": "It sounds like you're going through a really difficult time, and feeling like you have no value is incredibly painful. If you're feeling unsafe or like you might harm yourself, please reach out to someone you trust or a professional for support. There are people who care and want to help.\n\nTo help me understand what's going on, could you tell me about the situation that led you to feeling this way? What happened?",
+      "risk_state": "supportive_warning",
+      "risk_reason": "Expresses feeling of worthlessness, a potential indicator of suicidal ideation.",
+      "include_safety_note": true
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "It is my first internship, I don't know what I can do, it seems like i didn't help and only create chaos.",
+      "assistant": "That sounds really challenging, starting a new internship and feeling like you're not making a helpful contribution. To get a clearer picture, could you tell me what emotion you felt most strongly in that moment – perhaps anxious, frustrated, or something else? Also, on a scale of 0 to 100, how strong did that feeling feel at its peak?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "70",
+      "assistant": "It makes sense that feeling like you created chaos would be upsetting. To help me understand things a little better, could you tell me what emotion you felt most strongly when you realized you weren't sure how to help – perhaps anxious, frustrated, or something else? You can use your own words if none of those quite fit.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "disappointed",
+      "assistant": "Okay, thanks for sharing that. It’s tough when an internship doesn’t go as planned.\n\nTo help get a clearer picture, could you share some specific things that happened that made you think you had no value – just facts or observations, if you can? What exactly led you to that conclusion?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "I can not realize the fuction using multi-dimension tables, and I'm new with the fuctions. It takes time to understand and use those function, like automatic workflow. Besides, this morning I made a mistake to give the information which is very important not to give others to a co-worker.",
+      "assistant": "It's understandable that struggling with those functions and making a mistake with the information feels discouraging. Now, to get a bit more balanced, what facts suggest that thought – “I have no value” – might not be 100% true? Even small things can be helpful here.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "I help other interns do the tests, but maybe it is not that helpful.",
+      "assistant": "It sounds like you're being hard on yourself, and it's great that you're able to identify things you *are* doing, even while feeling down.\n\nThinking about the thought “I have no value,” I wonder if any of these patterns might be playing a role? Sometimes when we're feeling upset, our thoughts can get a little distorted. \n\n* **Labeling** might be happening if you're applying a broad, negative label to yourself (\"I have no value\") instead of focusing on specific actions.\n* **All-or-nothing thinking** could be present if you see things as either perfect or a complete failure, with no middle ground.\n* **Magnification/minimization** sometimes shows up when we blow things out of proportion—focusing on mistakes while downplaying our strengths.\n\nDo any of those resonate with how you're thinking, or perhaps something else is going on?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "I think all of them",
+      "assistant": "It makes sense that those distortions are all showing up – it sounds like you’re putting a lot of pressure on yourself. \n\nGiven what we’ve discussed – the things you’ve been able to do, and also the challenges you’re facing – what’s a more balanced way to look at the situation? What thought might acknowledge both your difficulties *and* your contributions, rather than jumping to “I have no value”?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 5,
+      "step_after": 6,
+      "user": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can udnertake the responsibility, so I should be brave to learn, don't look down yourself, abby.",
+      "assistant": "That's a really thoughtful and kind way to reframe things for yourself. Now, thinking back to that initial feeling of disappointment, how strong is it *now*, after working through these steps? If you had to give it a rating from 0 to 100, with 0 being not at all and 100 being the strongest it was, what number would you choose?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 6,
+      "step_after": 7,
+      "user": "60",
+      "assistant": "Okay, Abby, let's wrap things up. It sounds like today’s situation at your internship brought up a lot of disappointment – a 70 out of 100 initially. We explored how the thought “I have no value” came up, and looked at evidence both for and against that belief. It was helpful to identify those thinking patterns – labeling, all-or-nothing thinking, and magnification – that were contributing to how strong that feeling was. \n\nYou then came up with a more balanced thought: acknowledging that you’re new, still learning, and need to give yourself space to grow. That’s great self-compassion. It looks like that shift helped bring your intensity down to a 60. \n\nYou did a lot of work today to untangle this, and it’s a good first step in recognizing and challenging those automatic negative thoughts. Remember you’re still growing, and it’s okay to not have all the answers right away.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

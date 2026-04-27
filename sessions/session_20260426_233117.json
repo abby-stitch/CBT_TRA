@@ -1,0 +1,48 @@
+{
+  "session_id": "20260426_233117",
+  "last_updated": "2026-04-26 23:33:13",
+  "current_step": 2,
+  "session_status": "in_progress",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "thought_record": {
+    "date": "2026-04-26 23:31",
+    "situation": "我丢三落四，导致总是要让舍友帮忙生气",
+    "emotion": "ashamed",
+    "intensity_before": 70,
+    "automatic_thought": "我觉得自己很没价值，不能帮助别人只会给别人带来麻烦。",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "我丢三落四，导致总是要让舍友帮忙生气，我觉得自己很没价值，不能帮助别人只会给别人带来麻烦。"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, I see. So you're feeling ashamed because you feel like you're a burden to your roommate when you need help.\n\nLet's look at the evidence for that thought. Can you think of any specific instances where losing things or needing help seemed to confirm that you're a burden or not valuable? Just a fact or two would be helpful to start."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "我丢三落四，导致总是要让舍友帮忙生气，我觉得自己很没价值，不能帮助别人只会给别人带来麻烦。",
+      "assistant": "Okay, I see. So you're feeling ashamed because you feel like you're a burden to your roommate when you need help.\n\nLet's look at the evidence for that thought. Can you think of any specific instances where losing things or needing help seemed to confirm that you're a burden or not valuable? Just a fact or two would be helpful to start.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

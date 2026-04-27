@@ -1,15 +1,44 @@
 import json
-import requests
 import re
 import os
 from datetime import datetime
+
 from prompts import CBTPrompts
 from knowledge_base import DistortionKnowledge
 
+import config
+import llm_io
+import safety
+import storage
+
+
+def _require_config_str(name: str) -> str:
+    value = getattr(config, name, None)
+    if not isinstance(value, str) or not value.strip():
+        raise RuntimeError(f"Missing or empty config.{name}. Please set {name} in config.py")
+    return value.strip()
+
 class CBTAgent:
-    def __init__(self, step=1, initial_record=None, model="gemma2:9b"):
-        self.model = model
-        self.url = "http://localhost:11434/api/generate"
+    def __init__(
+        self,
+        step=1,
+        initial_record=None,
+        model: str | None = None,
+        url: str | None = None,
+        llm_provider: str | None = None,
+        api_key_env_var: str | None = None,
+        sessions_dir: str | None = None,
+    ):
+        self.llm_provider = (llm_provider or _require_config_str("LLM_PROVIDER")).lower()
+        self.model = model or _require_config_str("LLM_MODEL")
+        self.url = url or _require_config_str("LLM_URL")
+
+        env_var = api_key_env_var or getattr(config, "API_KEY_ENV_VAR", None)
+        self.api_key_env_var = env_var.strip() if isinstance(env_var, str) and env_var.strip() else "OPENAI_API_KEY"
+
+        sd = sessions_dir or getattr(config, "SESSIONS_DIR", None)
+        self.sessions_dir = sd.strip() if isinstance(sd, str) and sd.strip() else "sessions"
+
         self.current_step = step
         
         # Terminology: the whole workflow is one Session, each exchange is one Turn
@@ -47,12 +76,11 @@ class CBTAgent:
         self.last_safety_warning_turn = 0
         self.SAFETY_FALLBACK_PATTERNS = [
             (r"\b(kill myself|suicide|suicidal|end my life|want to die|don't want to live|do not want to live|hurt myself|self[- ]harm|overdose|stop living|better off without me|not wake up)\b", "self_harm_risk"),
-            (r"(不想活|活不下去|想死|自杀|伤害自己|不如死了)", "self_harm_risk"),
         ]
 
     def _debug_log(self, tag: str, **data):
         payload = " | ".join([f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in data.items()])
-        print(f"[DEBUG][{tag}] {payload}")
+        print(f"[DEBUG][{tag}] {payload}\n")
 
     def _is_field_filled(self, field_name: str) -> bool:
         val = self.thought_record.get(field_name)
@@ -163,53 +191,33 @@ TASK:
     #     return self._call_llm(prompt, temperature=0.7)
 
     def _call_llm(self, prompt, temperature=0.7):
-        payload = {"model": self.model, "prompt": prompt, "stream": False, "temperature": temperature}
-        try:
-            res = requests.post(self.url, json=payload)
-            return res.json()["response"].strip()
-        except Exception as e:
-            return f"Error: {e}"
+        return llm_io.call_llm(
+            provider=self.llm_provider,
+            url=self.url,
+            model=self.model,
+            prompt=prompt,
+            temperature=temperature,
+            api_key_env_var=self.api_key_env_var,
+        )
 
     def _semantic_safety_check(self, user_input: str) -> tuple[str, str | None]:
         recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-4:]])
-        safety_prompt = CBTPrompts.safety_check()
-        prompt = f"""
-{safety_prompt}
-
-RECENT TURNS:
-{recent_turns}
-USER INPUT:
-{user_input}
-"""
-        raw = self._call_llm(prompt, temperature=0.1)
-        try:
-            match = re.search(r"\{.*\}", raw, re.DOTALL)
-            if match:
-                data = json.loads(re.sub(r",\s*\}", "}", match.group(0)))
-                risk = data.get("risk_level")
-                reason = data.get("reason")
-                if risk in {"normal", "supportive_warning", "acute_warning"}:
-                    self._debug_log("SAFETY_CHECK", source="llm", risk=risk, reason=reason, user_input=user_input)
-                    return risk, reason
-        except Exception:
-            pass
-
-        text = user_input.lower()
-        for pattern, _ in self.SAFETY_FALLBACK_PATTERNS:
-            if re.search(pattern, text):
-                self._debug_log("SAFETY_CHECK", source="fallback", risk="acute_warning", reason="fallback pattern matched acute-risk phrase", user_input=user_input)
-                return "acute_warning", "fallback pattern matched acute-risk phrase"
-        self._debug_log("SAFETY_CHECK", source="default", risk="normal", reason=None, user_input=user_input)
-        return "normal", None
+        risk, reason, source = safety.semantic_safety_check(
+            call_llm=self._call_llm,
+            safety_prompt=CBTPrompts.safety_check(),
+            recent_turns=recent_turns,
+            user_input=user_input,
+            fallback_patterns=self.SAFETY_FALLBACK_PATTERNS,
+        )
+        self._debug_log("SAFETY_CHECK", source=source, risk=risk, reason=reason, user_input=user_input)
+        return risk, reason
 
     def _should_include_safety_note(self, risk_level: str) -> bool:
-        if risk_level == "acute_warning":
-            return True
-        if risk_level != "supportive_warning":
-            return False
-        if self.last_safety_warning_turn == 0:
-            return True
-        return (len(self.turns) - self.last_safety_warning_turn) >= 2
+        return safety.should_include_safety_note(
+            risk_level=risk_level,
+            last_safety_warning_turn=self.last_safety_warning_turn,
+            turns_len=len(self.turns),
+        )
 
     def _reset_safety_memory_if_normal(self, risk_level: str):
         if risk_level == "normal":
@@ -218,43 +226,53 @@ USER INPUT:
             self.last_safety_warning_turn = 0
 
     def _support_guidance_line(self, risk_level: str) -> str:
-        if risk_level == "acute_warning":
-            return "If you might be unsafe right now, please reach out to a trusted person, local emergency help, or professional support as soon as you can."
-        if risk_level == "supportive_warning":
-            return "If these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
-        return ""
+        return safety.support_guidance_line(risk_level)
 
     def _ensure_support_guidance(self, message: str, risk_level: str, include_safety_note: bool) -> str:
-        if not include_safety_note:
-            return message
-        guidance = self._support_guidance_line(risk_level)
-        if not guidance:
-            return message
-        lowered = message.lower()
-        if any(token in lowered for token in ["professional support", "someone you trust", "trusted person", "emergency help"]):
-            return message
-        return f"{message}\n\n{guidance}"
+        return safety.ensure_support_guidance(message, risk_level, include_safety_note)
+
+    def _is_stop_request(self, user_input: str) -> bool:
+        text = user_input.strip().lower()
+        return text in {"exit", "quit", "stop", "pause", "not now", "maybe later"}
+
+    def _stop_session_message(self) -> str:
+        return "No problem. We can stop here for now. Your current progress will be kept, and you can continue later if you want."
+
+    def _emotion_is_explicitly_stated(self, user_input: str, emotion: str) -> bool:
+        candidate = str(emotion).strip().lower()
+        if not candidate:
+            return False
+        variants = {
+            "sad": {"sad", "sadness", "down"},
+            "anxious": {"anxious", "anxiety", "worried", "worry", "nervous"},
+            "upset": {"upset"},
+            "angry": {"angry", "mad"},
+            "ashamed": {"ashamed", "embarrassed"},
+            "guilty": {"guilty", "guilt"},
+            "frustrated": {"frustrated", "frustration"},
+            "disappointed": {"disappointed", "disappointment"},
+            "lonely": {"lonely", "alone"},
+            "hurt": {"hurt"},
+            "scared": {"scared", "afraid"},
+            "overwhelmed": {"overwhelmed"},
+        }
+        text = re.sub(r"[^a-zA-Z\s]", " ", user_input.lower())
+        terms = variants.get(candidate, {candidate})
+        return any(re.search(rf"\b{re.escape(term)}\b", text) for term in terms)
 
     def save_session(self):
-        """Persist session data after each turn to avoid data loss."""
-        # Ensure sessions directory exists
-        os.makedirs("sessions", exist_ok=True)
-        
-        session_data = {
-            "session_id": self.session_id,
-            "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "current_step": self.current_step,
-            "session_status": self.session_status,
-            "safety_state": self.safety_state,
-            "safety_reason": self.safety_reason,
-            "last_safety_warning_turn": self.last_safety_warning_turn,
-            "thought_record": self.thought_record,
-            "chat_history": self.chat_history,
-            "turns": self.turns
-        }
-        file_path = f"sessions/session_{self.session_id}.json"
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(session_data, f, indent=2, ensure_ascii=False)
+        file_path = storage.save_session(
+            session_id=self.session_id,
+            current_step=self.current_step,
+            session_status=self.session_status,
+            safety_state=self.safety_state,
+            safety_reason=self.safety_reason,
+            last_safety_warning_turn=self.last_safety_warning_turn,
+            thought_record=self.thought_record,
+            chat_history=self.chat_history,
+            turns=self.turns,
+            sessions_dir=self.sessions_dir,
+        )
         self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
 
     def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None, risk_level: str = "normal", safety_reason: str | None = None, include_safety_note: bool = False) -> str:
@@ -320,6 +338,9 @@ SAFETY CONTEXT:
 - include_safety_note_this_turn: {include_safety_note}
 - If include_safety_note_this_turn is true, include 1-2 warm, natural sentences acknowledging pain.
 - If include_safety_note_this_turn is true, you should also explicitly encourage the user to seek trusted or professional support if they may be unsafe.
+- If include_safety_note_this_turn is true and you continue the CBT task, keep the follow-up question especially gentle, grounded, and brief.
+- Avoid abrupt reset phrases such as "Let's go back to the beginning" or other brisk workflow language right after a safety note.
+- If the missing field is an emotion intensity rating, ask how strong the emotion felt at the time or at its peak; do NOT literally explain the internal field name "intensity_before" and do NOT ask "before you started to think about" the event.
 - Do NOT use fixed template wording for the whole reply. Vary the phrasing naturally based on the user's message.
 - If include_safety_note_this_turn is false, do NOT repeat the previous safety reminder.
 - If risk_level is acute_warning, output only the supportive safety-focused reply for this turn and do not continue the CBT task.
@@ -365,7 +386,9 @@ TASK:
    - if there are missing fields: ask for the most important missing item;
    - if no missing fields: give a short transition and ask the next-step question.
 4. Keep tone empathetic and specific. Avoid vague repetition like "tell me more" unless you specify what exactly is missing.
-5. Output only the counselor message.
+5. Do not use brisk filler transitions such as "Okay, let's..." or state an unconfirmed emotion as a known fact.
+6. If asking for an intensity rating in Step 1 or Step 6, use natural user-facing wording such as "at the time" or "at its peak," not the schema labels.
+7. Output only the counselor message.
 """
         return self._call_llm(prompt, temperature=0.7)
 
@@ -373,6 +396,13 @@ TASK:
         self.chat_history.append({"role": "user", "content": user_input})
         prev_step = self.current_step
         self._debug_log("TURN_START", session_id=self.session_id, step_before=prev_step, user_input=user_input)
+        if self._is_stop_request(user_input):
+            assistant_msg = self._stop_session_message()
+            self.session_status = "stopped"
+            self.chat_history.append({"role": "assistant", "content": assistant_msg})
+            self.turns.append({"step_before": prev_step, "step_after": self.current_step, "user": user_input, "assistant": assistant_msg, "risk_state": "normal", "risk_reason": None, "include_safety_note": False})
+            self.save_session()
+            return {"message": assistant_msg, "step_completed": False, "session_completed": True}
         risk, reason = self._semantic_safety_check(user_input)
         self.safety_state = risk
         self.safety_reason = reason
@@ -440,16 +470,19 @@ TASK:
    If overwriting, you MUST include: "overwrite_fields": ["field1", "field2"] listing exactly which fields are being corrected.
 4. If user confirms something (e.g. "Yes", "Correct"), use CONTEXT to infer what they are confirming.
 5. Mapping rules:
-   - "emotion": store ONE primary feeling word.
+   - Be conservative. If a field is uncertain, do not write it into the JSON yet. Leave it missing so the assistant can ask a follow-up question. Do NOT guess just to complete the current step.
+   - "emotion": store ONE primary feeling word only when the user explicitly states a feeling word or clearly selects/confirms one.
      Accept common emotion words and close variants (e.g., upset, anxious, nervous, sad, angry, ashamed, frustrated, disappointed, hurt, scared, overwhelmed).
      Minor spelling mistakes are allowed if the intended meaning is clear (e.g., "anxiou" -> "anxious", "disapointed" -> "disappointed").
-     If the user gives multiple emotions, choose the main emotion most central to the distress in this turn.
-     If the user describes an emotional state indirectly but the meaning is clear, infer the closest feeling word.
+     If the user gives multiple emotions, choose the main emotion only if the user clearly presents one as primary; otherwise omit "emotion".
+     Do NOT infer "emotion" from self-judgment, consequences, symptoms, or general context alone.
      Do NOT treat self-judgment words as emotions (e.g., terrible, worthless, failure, stupid).
      If the user explicitly says "I feel X" where X is a self-judgment, map it to "automatic_thought" instead.
-     Only leave "emotion" out if the intended feeling is truly unclear.
+     If you are only guessing the likely feeling from context, omit "emotion" for now.
    - Self-judgment / interpretation / prediction belongs to "automatic_thought" (e.g., terrible, worthless, failure, "I'll never find a job", "Everyone else can").
-   - "intensity_before"/"intensity_after": a number 0-100. If user replies only \"55\", treat it as the missing intensity for the current step.
+   - "intensity_before"/"intensity_after": must be an explicit number from the user in the 0-100 range.
+     Do NOT infer or estimate intensity from wording, tone, severity, or context.
+     If the user replies only \"55\", treat it as the missing intensity for the current step.
    - "distortions": MUST be names/labels of distortions, not questions.
    - "predicted_distortion": assistant-suggested distortion labels (store as a list).
    - "evidence_for"/"evidence_against": should be factual statements; output as a list when possible.
@@ -465,6 +498,8 @@ TASK:
                 data = json.loads(json_str)
                 overwrite_fields = data.pop("overwrite_fields", None) or data.pop("_overwrite_fields", None) or []
                 data.pop("edit_intent", None)
+                if "emotion" in data and not self._emotion_is_explicitly_stated(user_input, data["emotion"]):
+                    data.pop("emotion", None)
 
                 allow_overwrite_fields: set[str] = set()
                 if isinstance(overwrite_fields, str):

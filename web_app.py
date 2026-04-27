@@ -15,6 +15,7 @@ os.chdir(BASE_DIR)
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
+import config
 from agent import CBTAgent
 
 app = FastAPI()
@@ -290,7 +291,7 @@ def message(req: MessageRequest) -> MessageResponse:
 def record_page(session_id: str) -> str:
     agent = _agents.get(session_id)
     if agent is None:
-        p = Path("sessions") / f"session_{session_id}.json"
+        p = Path(config.SESSIONS_DIR) / f"session_{session_id}.json"
         if not p.exists():
             raise HTTPException(status_code=404, detail="Session not found.")
         data = json.loads(p.read_text(encoding="utf-8"))

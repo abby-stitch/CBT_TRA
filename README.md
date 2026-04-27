@@ -29,18 +29,32 @@ uv sync
 pip install -e .
 ```
 
-### 3) 启动本地 Ollama（必须）
+### 3) 配置（config.py）
 
-当前 Agent 通过 HTTP 调用本地 Ollama：
-- 默认地址：`http://localhost:11434/api/generate`
-- 默认模型：`gemma2:9b`（见 `doubaotest/agent.py`）
+本项目把“可变项”集中放在 `config.py` 里，`config.py` 中写的就是默认值（default）。用户要修改行为时，直接改 `config.py` 即可。
 
-确保 Ollama 在运行，并且模型已拉取：
+- 切换模型名：修改 `LLM_MODEL`
+- 切换 Ollama 地址：修改 `LLM_URL`
+- 切换对话保存目录：修改 `SESSIONS_DIR`
+- 切换调用方式（Ollama / API）：修改 `LLM_PROVIDER`
+
+默认配置为 Ollama：
+- `LLM_PROVIDER = "ollama"`
+- `LLM_URL = "http://localhost:11434/api/generate"`
+- `LLM_MODEL = "gemma2:9b"`
+
+如果你使用的是 Ollama，请确保 Ollama 在运行，并且已拉取你在 `LLM_MODEL` 中设置的模型：
 
 ```bash
 ollama serve
 ollama pull gemma2:9b
 ```
+
+如果你使用 API（OpenAI-compatible）：
+- `LLM_PROVIDER = "openai_compatible"`
+- `LLM_URL` 设置为你的 API Base URL（例如 `https://api.openai.com/v1` 或兼容服务的地址）
+- `LLM_MODEL` 设置为你要使用的模型名
+- 并在环境变量里设置 `API_KEY_ENV_VAR` 指向的 key（默认读取 `OPENAI_API_KEY`）
 
 ---
 
@@ -115,9 +129,9 @@ uvicorn web_app:app --reload --port 8000
 
 ## 数据保存位置
 
-每轮对话都会保存会话 JSON 到：
+每轮对话都会保存会话 JSON 到 `SESSIONS_DIR` 指定的目录下（默认 `sessions/`，见 `config.py`）：
 
-- `doubaotest/sessions/session_<session_id>.json`
+- `sessions/session_<session_id>.json`
 
 文件内容包含：
 - `thought_record`（核心表单）
