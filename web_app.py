@@ -78,92 +78,766 @@ def index() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CBT Thought Record Chat</title>
+  <title>The Quiet Sanctuary</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b1220; color: #e7eefc; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .title { font-size: 18px; font-weight: 650; }
-    .meta { font-size: 12px; opacity: .8; }
+    :root {
+      --on-primary-fixed: #354339;
+      --outline-variant: #9db6c1;
+      --tertiary-container: #faf3e5;
+      --surface-tint: #546257;
+      --on-background: #1e363f;
+      --on-surface-variant: #4b636d;
+      --background: #f3fbff;
+      --surface: #f3fbff;
+      --surface-container-lowest: #ffffff;
+      --surface-container-low: #e9f5fc;
+      --surface-container: #e0f0f9;
+      --surface-container-high: #d7ecf5;
+      --surface-container-highest: #cde7f2;
+      --primary: #546257;
+      --primary-dim: #48564c;
+      --primary-container: #d7e6d9;
+      --on-primary: #ecfcee;
+      --outline: #667e89;
+      --tertiary: #635f54;
+      --on-tertiary-container: #605b51;
+      --secondary-container: #ffdbd0;
+      --on-surface: #1e363f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Manrope', sans-serif;
+      background: var(--background);
+      color: var(--on-surface);
+      selection-background-color: var(--primary-container);
+    }
+    a { color: inherit; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .page-shell {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .ambient-right,
+    .ambient-left {
+      position: fixed;
+      border-radius: 9999px;
+      filter: blur(120px);
+      z-index: -1;
+      pointer-events: none;
+    }
+    .ambient-right {
+      top: 20%;
+      right: -120px;
+      width: 380px;
+      height: 380px;
+      background: rgba(84, 98, 87, 0.08);
+    }
+    .ambient-left {
+      bottom: 16%;
+      left: -120px;
+      width: 420px;
+      height: 420px;
+      background: rgba(255, 219, 208, 0.18);
+    }
+    .nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 50;
+      backdrop-filter: blur(20px);
+      background: rgba(243, 251, 255, 0.82);
+      box-shadow: 0 1px 0 rgba(157, 182, 193, 0.15);
+    }
+    .nav-inner,
+    .wrap {
+      width: min(1440px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 0;
+    }
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--on-background);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+    }
+    .nav-links a {
+      text-decoration: none;
+      transition: color .25s ease;
+    }
+    .nav-links a.active {
+      color: var(--on-background);
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 4px;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--primary);
+    }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      border: none;
+      background: transparent;
+      color: inherit;
+    }
+    .wrap {
+      padding: 128px 0 96px;
+    }
+    .meta { font-size: 12px; color: var(--on-surface-variant); opacity: .9; }
     .hidden { display: none; }
-    .panel { margin-top: 16px; display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
-    .chat { background: #0f1a30; border: 1px solid #1e2b47; border-radius: 12px; padding: 12px; height: 70vh; display: flex; flex-direction: column; }
-    .log { flex: 1; overflow: auto; padding: 8px; }
-    .msg { margin: 10px 0; display: flex; }
+    .welcome-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 72px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--on-surface-variant);
+      margin-bottom: 16px;
+    }
+    .hero-title {
+      max-width: 820px;
+      font-size: clamp(3rem, 8vw, 5.25rem);
+      line-height: 1.08;
+      font-weight: 300;
+      letter-spacing: -0.05em;
+      margin: 0 0 24px;
+      color: var(--on-background);
+    }
+    .hero-copy {
+      max-width: 660px;
+      color: var(--on-surface-variant);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+    .btn-primary,
+    .btn-secondary,
+    .reports-link,
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 14px;
+      padding: 15px 22px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      border: none;
+      color: var(--on-primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dim) 100%);
+      box-shadow: 0 16px 30px rgba(84, 98, 87, 0.16);
+    }
+    .btn-secondary,
+    .reports-link {
+      color: var(--on-background);
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(157, 182, 193, 0.3);
+    }
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .reports-link:hover {
+      transform: translateY(-1px);
+    }
+    .feature-visual {
+      position: relative;
+      height: 380px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: var(--surface-container-low);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 72px;
+    }
+    .feature-visual img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .58;
+    }
+    .feature-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(192,223,237,.55), rgba(243,251,255,.1));
+    }
+    .feature-content {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+      padding: 32px;
+      text-align: center;
+    }
+    .feature-quote {
+      font-size: 1.2rem;
+      line-height: 1.8;
+      font-style: italic;
+      color: var(--on-surface-variant);
+    }
+    .feature-line {
+      width: 96px;
+      height: 1px;
+      margin: 28px auto 0;
+      background: rgba(157, 182, 193, 0.4);
+    }
+    .records-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .records-sidebar h2 {
+      margin: 0 0 12px;
+      font-size: 2rem;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+    .records-sidebar p {
+      margin: 0 0 24px;
+      font-size: .95rem;
+      line-height: 1.7;
+      color: var(--on-surface-variant);
+    }
+    .streak-card {
+      padding: 24px;
+      border-radius: 18px;
+      background: rgba(233, 245, 252, 0.9);
+    }
+    .streak-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-weight: 800;
+      color: rgba(75, 99, 109, 0.78);
+      margin-bottom: 12px;
+    }
+    .streak-track {
+      height: 4px;
+      border-radius: 9999px;
+      background: rgba(157, 182, 193, 0.24);
+      overflow: hidden;
+    }
+    .streak-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: inherit;
+    }
+    .records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .record-card {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 28px;
+      border-radius: 18px;
+      text-decoration: none;
+      color: inherit;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(157, 182, 193, 0.18);
+      box-shadow: 0 18px 30px rgba(30, 54, 63, 0.04);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .record-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(84, 98, 87, 0.24);
+      box-shadow: 0 24px 36px rgba(30, 54, 63, 0.08);
+    }
+    .record-card.is-highlight {
+      background: rgba(215, 236, 245, 0.9);
+    }
+    .record-icon {
+      flex: 0 0 64px;
+      width: 64px;
+      height: 64px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-container);
+      color: var(--primary);
+    }
+    .record-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .record-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .record-date {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--on-surface-variant);
+    }
+    .record-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .tag {
+      padding: 7px 12px;
+      border-radius: 9999px;
+      font-size: .75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .tag-emotion {
+      background: var(--tertiary-container);
+      color: var(--on-tertiary-container);
+    }
+    .tag-metric {
+      background: var(--surface-container-highest);
+      color: var(--on-surface-variant);
+    }
+    .record-title {
+      margin: 0 0 10px;
+      font-size: 1.25rem;
+      line-height: 1.35;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .record-copy {
+      margin: 0;
+      color: var(--on-surface-variant);
+      line-height: 1.7;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .record-arrow {
+      align-self: center;
+      color: var(--outline-variant);
+    }
+    .records-footer {
+      padding-top: 12px;
+      text-align: center;
+    }
+    .records-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .footer-note {
+      margin-top: 88px;
+      text-align: center;
+    }
+    .footer-pill {
+      display: inline-block;
+      padding: 14px 22px;
+      border-radius: 9999px;
+      background: rgba(233, 245, 252, 0.9);
+      color: var(--on-surface-variant);
+      font-size: .92rem;
+      font-weight: 600;
+    }
+    .footer-icons {
+      display: flex;
+      justify-content: center;
+      gap: 26px;
+      margin-top: 26px;
+      color: var(--outline);
+    }
+    .conversation-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 164px);
+    }
+    .conversation-header {
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .conversation-header .eyebrow {
+      margin-bottom: 10px;
+    }
+    .conversation-title {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      color: var(--on-background);
+    }
+    .conversation-copy {
+      margin: 10px 0 0;
+      color: var(--on-surface-variant);
+      font-size: 1rem;
+    }
+    .session-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .session-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      background: rgba(233, 245, 252, 0.95);
+      color: var(--on-surface-variant);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .panel { margin-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+    .chat {
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgba(157,182,193,.2);
+      border-radius: 24px;
+      padding: 18px;
+      height: 68vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 22px 36px rgba(30, 54, 63, 0.05);
+    }
+    .log {
+      flex: 1;
+      overflow: auto;
+      padding: 8px 6px 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .msg { display: flex; align-items: flex-end; gap: 14px; }
     .msg.user { justify-content: flex-end; }
-    .bubble { max-width: 78%; padding: 10px 12px; border-radius: 12px; line-height: 1.4; white-space: pre-wrap; }
-    .msg.user .bubble { background: #2b67ff; color: white; border-bottom-right-radius: 4px; }
-    .msg.assistant .bubble { background: #182544; border: 1px solid #24355a; border-bottom-left-radius: 4px; }
-    .composer { display: flex; gap: 8px; padding: 8px; border-top: 1px solid #1e2b47; }
-    input[type="text"] { flex: 1; padding: 12px 12px; border-radius: 10px; border: 1px solid #2a3b63; background: #0b1326; color: #e7eefc; outline: none; }
-    button { padding: 12px 14px; border-radius: 10px; border: 1px solid #2a3b63; background: #122046; color: #e7eefc; cursor: pointer; }
-    button:hover { background: #172a5a; }
-    button.primary { background: #2b67ff; border-color: #2b67ff; color: white; }
-    button.primary:hover { background: #2459da; border-color: #2459da; }
+    .avatar {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar.assistant {
+      background: var(--primary-container);
+      color: var(--primary);
+    }
+    .avatar.user {
+      background: var(--surface-container-low);
+      color: var(--outline);
+      order: 2;
+    }
+    .bubble-wrap {
+      max-width: min(78%, 720px);
+    }
+    .bubble {
+      padding: 18px 20px;
+      border-radius: 18px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      box-shadow: 0 8px 20px rgba(30, 54, 63, 0.03);
+      font-size: 1rem;
+    }
+    .msg.user .bubble-wrap { order: 1; }
+    .msg.user .bubble {
+      background: var(--surface-container-highest);
+      color: var(--on-surface);
+      border-bottom-right-radius: 6px;
+    }
+    .msg.assistant .bubble {
+      background: var(--primary-container);
+      color: var(--on-primary-fixed);
+      border: 1px solid rgba(157,182,193,.18);
+      border-bottom-left-radius: 6px;
+    }
+    .timestamp {
+      margin-top: 8px;
+      font-size: .75rem;
+      color: rgba(75, 99, 109, 0.72);
+    }
+    .msg.user .timestamp {
+      text-align: right;
+    }
+    .composer-shell {
+      position: sticky;
+      bottom: 0;
+      margin-top: 20px;
+    }
+    .focus-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .focus-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-weight: 800;
+      color: rgba(75, 99, 109, 0.72);
+      margin-right: 4px;
+    }
+    .focus-chip {
+      padding: 8px 14px;
+      border-radius: 9999px;
+      background: var(--tertiary-container);
+      color: var(--on-tertiary-container);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .composer {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 20px;
+      background: rgba(205, 231, 242, 0.48);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(157,182,193,.25);
+      background: rgba(255,255,255,.82);
+      color: var(--on-surface);
+      outline: none;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    button { font-family: inherit; }
     button:disabled { opacity: .55; cursor: not-allowed; }
-    .side { background: #0f1a30; border: 1px solid #1e2b47; border-radius: 12px; padding: 12px; height: 70vh; overflow: auto; }
-    pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+    .input-note {
+      margin-top: 10px;
+      text-align: center;
+      font-size: .8rem;
+      color: rgba(75, 99, 109, 0.72);
+    }
+    .completion-banner {
+      margin-top: 18px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      background: rgba(215,236,245,.72);
+      border: 1px solid rgba(157,182,193,.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .completion-copy {
+      color: var(--on-surface-variant);
+      line-height: 1.7;
+      font-size: .95rem;
+    }
+    pre { margin: 0; font-size: 12px; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     @media (max-width: 900px) {
+      .nav-inner, .wrap { width: min(100% - 32px, 1440px); }
+      .nav-links { display: none; }
+      .records-grid { grid-template-columns: 1fr; gap: 28px; }
       .panel { grid-template-columns: 1fr; }
-      .side { height: auto; }
-      .chat { height: 65vh; }
+      .chat { height: 62vh; }
+      .feature-visual { height: 300px; }
+      .record-top { flex-direction: column; }
+      .record-tags { justify-content: flex-start; }
+      .record-card { padding: 22px; gap: 18px; }
+      .wrap { padding-top: 116px; }
+      .bubble-wrap { max-width: 88%; }
+      .completion-banner { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="title">CBT Thought Record Chat</div>
-        <div class="meta" id="meta">Session: (not started)</div>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button id="newBtn">New Session</button>
-        <a id="reportsBtn" href="/reports" style="padding:12px 14px; border-radius:10px; border:1px solid #2a3b63; background:#122046; color:#e7eefc; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center;">View Reports</a>
-        <button id="viewBtn" class="primary hidden">View Thought Record</button>
-      </div>
-    </div>
+  <div class="page-shell">
+    <div class="ambient-right"></div>
+    <div class="ambient-left"></div>
 
-    <div id="startScreen" style="margin-top:16px; padding:16px; background:#0f1a30; border:1px solid #1e2b47; border-radius:12px;">
-      <div style="font-size:14px; opacity:.9; line-height:1.5;">
-        Choose what you want to do next.
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-top:16px;">
-        <div style="padding:16px; background:#13203a; border:1px solid #24355a; border-radius:12px;">
-          <div style="font-size:16px; font-weight:650;">Start Thought Record</div>
-          <div style="font-size:13px; opacity:.82; line-height:1.5; margin-top:8px;">
-            Begin a guided CBT thought record and save the completed session automatically.
-          </div>
-          <div style="margin-top:14px;">
-            <button id="startBtn" class="primary">New Session</button>
-          </div>
+    <nav class="nav">
+      <div class="nav-inner">
+        <div class="brand">The Quiet Sanctuary</div>
+        <div class="nav-links">
+          <a href="/" class="active">Welcome</a>
+          <a href="#" id="sessionLink">Session</a>
+          <a href="/reports">Reports</a>
         </div>
-        <div style="padding:16px; background:#13203a; border:1px solid #24355a; border-radius:12px;">
-          <div style="font-size:16px; font-weight:650;">View Reports</div>
-          <div style="font-size:13px; opacity:.82; line-height:1.5; margin-top:8px;">
-            Review single-session and multi-session reports generated directly from completed sessions.
-          </div>
-          <div style="margin-top:14px;">
-            <a href="/reports" style="padding:12px 14px; border-radius:10px; border:1px solid #2a3b63; background:#122046; color:#e7eefc; text-decoration:none; display:inline-flex; align-items:center;">Open Reports</a>
-          </div>
+        <div class="nav-actions">
+          <button class="icon-btn" type="button" aria-label="Settings"><span class="material-symbols-outlined">settings</span></button>
+          <button class="icon-btn" type="button" aria-label="Account"><span class="material-symbols-outlined">account_circle</span></button>
         </div>
       </div>
-    </div>
+    </nav>
 
-    <div class="panel hidden" id="chatPanel">
-      <div class="chat">
-        <div class="log" id="log"></div>
-        <div class="composer">
-          <input id="input" type="text" placeholder="Type your message..." autocomplete="off" />
-          <button class="primary" id="sendBtn">Send</button>
+    <main class="wrap">
+      <div id="welcomePage">
+        <section class="welcome-hero">
+          <div class="eyebrow">Daily Mindfulness</div>
+          <h1 class="hero-title">How are you feeling today?</h1>
+          <p class="hero-copy">
+            A quiet place to work through a thought record, notice patterns in your reflections,
+            and revisit the sessions that helped you slow down and reframe difficult moments.
+          </p>
+          <div class="hero-actions">
+            <button id="startBtn" class="btn-primary" type="button">
+              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+              Start New Session
+            </button>
+            <a id="reportsBtn" class="btn-secondary" href="/reports">
+              <span class="material-symbols-outlined">description</span>
+              View Reports
+            </a>
+          </div>
+        </section>
+
+        <div class="feature-visual">
+          <img
+            alt="Soft calm ocean waves at dawn"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoE-aG9-BVEqlSd1HRdS59rsEoLMFwWgHHARpL-WavAz3ei5VMmVtiAwQlUANFoVJaF4wbpi-PVCDDeMdY63C2KuZutk_JtXrxR9tJNy5n_In1uWtiTZ96AlRgrtqtdGzmke43qhCD7roeTjHaRD-zhlkJYlWueRQFXyCaJxu6aOcPJOdiQk4ousKLDIF6KXY8riU_Z57bR6ka9YRwdYw7WkJZPt2djr04v3jY2xiQUX1I0hZqoDpvuA1tZnK1ve5s120c4X1c_-Hu"
+          />
+          <div class="feature-content">
+            <p class="feature-quote">"The quieter you become, the more you are able to hear."</p>
+            <div class="feature-line"></div>
+          </div>
+        </div>
+
+        <section class="records-grid">
+          <aside class="records-sidebar">
+            <h2>Recent Records</h2>
+            <p>
+              Your recent completed thought records. Revisit an earlier reflection or move to the
+              full reports area when you want a broader view.
+            </p>
+            <div class="streak-card">
+              <div class="streak-row">
+                <span>Completed Sessions</span>
+                <span id="sessionCount">0</span>
+              </div>
+              <div class="streak-track">
+                <div id="sessionFill" class="streak-fill"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <div id="recentRecords" class="records-list"></div>
+            <div class="records-footer">
+              <a class="nav-pill" href="/reports">
+                View All Session Reports
+                <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <footer class="footer-note">
+          <div class="footer-pill">Your data is private, stored locally, and reviewed only inside your own sanctuary.</div>
+          <div class="footer-icons">
+            <span class="material-symbols-outlined">psychology</span>
+            <span class="material-symbols-outlined">self_improvement</span>
+            <span class="material-symbols-outlined">potted_plant</span>
+          </div>
+        </footer>
+      </div>
+
+      <div class="conversation-shell hidden" id="chatPanel">
+        <header class="conversation-header">
+          <div class="eyebrow">Current Session</div>
+          <h1 class="conversation-title">Today's Reflection</h1>
+          <p class="conversation-copy">Find your space to breathe and share.</p>
+          <div class="session-meta-row">
+            <div class="session-chip">
+              <span class="material-symbols-outlined" style="font-size:18px;">psychology</span>
+              <span id="sessionMeta">Session not started</span>
+            </div>
+            <div class="session-chip">
+              <span class="material-symbols-outlined" style="font-size:18px;">receipt_long</span>
+              <span>Thought record saved at the end</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="panel">
+          <div>
+            <div class="chat">
+              <div class="log" id="log"></div>
+            </div>
+            <div class="composer-shell">
+              <div class="focus-row">
+                <span class="focus-label">Focus on:</span>
+                <span class="focus-chip">Emotion</span>
+                <span class="focus-chip">Situation</span>
+                <span class="focus-chip">Thoughts</span>
+                <span class="focus-chip">Evidence</span>
+              </div>
+              <div class="composer">
+                <input id="input" type="text" placeholder="Share your thoughts here..." autocomplete="off" />
+                <button class="btn-primary" id="sendBtn" type="button">
+                  <span>Send</span>
+                  <span class="material-symbols-outlined" style="font-size:18px;">send</span>
+                </button>
+              </div>
+              <div class="input-note">This is a safe space for reflection. Take your time.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="completionBanner" class="completion-banner hidden">
+          <div class="completion-copy">
+            Your thought record is ready to review. Open the full record to see the completed worksheet content.
+          </div>
+          <button id="viewBtn" class="btn-primary" type="button">
+            <span class="material-symbols-outlined" style="font-size:18px;">description</span>
+            View Thought Record
+          </button>
         </div>
       </div>
 
-      <div class="side">
-        <div class="meta" style="margin-bottom:8px;">thought_record</div>
-        <pre id="record">{}</pre>
-      </div>
-    </div>
+      <button id="newBtn" class="hidden" type="button"></button>
+    </main>
   </div>
 
 <script>
@@ -177,40 +851,169 @@ def index() -> str:
   const newBtn = document.getElementById('newBtn');
   const startBtn = document.getElementById('startBtn');
   const viewBtn = document.getElementById('viewBtn');
-  const startScreen = document.getElementById('startScreen');
+  const welcomePage = document.getElementById('welcomePage');
   const chatPanel = document.getElementById('chatPanel');
-  const recordEl = document.getElementById('record');
-  const metaEl = document.getElementById('meta');
+  const recentRecordsEl = document.getElementById('recentRecords');
+  const sessionCountEl = document.getElementById('sessionCount');
+  const sessionFillEl = document.getElementById('sessionFill');
+  const sessionLink = document.getElementById('sessionLink');
+  const sessionMetaEl = document.getElementById('sessionMeta');
+  const completionBannerEl = document.getElementById('completionBanner');
 
   function addMsg(role, text) {
     const row = document.createElement('div');
     row.className = 'msg ' + role;
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar ' + role;
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined';
+    icon.style.fontVariationSettings = role === 'assistant' ? "'FILL' 1" : "'FILL' 0";
+    icon.textContent = role === 'assistant' ? 'spa' : 'person';
+    avatar.appendChild(icon);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
     const b = document.createElement('div');
     b.className = 'bubble';
     b.textContent = text;
-    row.appendChild(b);
+    wrap.appendChild(b);
+
+    const stamp = document.createElement('div');
+    stamp.className = 'timestamp';
+    stamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    wrap.appendChild(stamp);
+
+    if (role === 'assistant') {
+      row.appendChild(avatar);
+      row.appendChild(wrap);
+    } else {
+      row.appendChild(wrap);
+      row.appendChild(avatar);
+    }
     logEl.appendChild(row);
     logEl.scrollTop = logEl.scrollHeight;
   }
 
   function setRecord(obj) {
-    recordEl.textContent = JSON.stringify(obj, null, 2);
+    return obj;
   }
 
-  function setMeta() {
-    metaEl.textContent = sessionId ? `Session: ${sessionId} | Step: ${currentStep}` : 'Session: (not started)';
+  function formatDate(value) {
+    if (!value) return 'Session completed';
+    const date = new Date(value.replace(' ', 'T'));
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString([], {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function buildTitle(item) {
+    const emotion = item.emotion || 'Reflection';
+    return `${emotion.charAt(0).toUpperCase() + emotion.slice(1)} reflection`;
+  }
+
+  function buildSummary(item) {
+    const parts = [];
+    if (item.intensity_before != null && item.intensity_after != null) {
+      parts.push(`Intensity ${item.intensity_before} to ${item.intensity_after}`);
+    }
+    const distortions = item.distortions || [];
+    if (distortions.length) {
+      parts.push(`Distortions: ${distortions.join(', ')}`);
+    }
+    return parts.join(' • ') || 'Open the full report to review this session.';
+  }
+
+  function renderRecentRecords(items) {
+    if (!items.length) {
+      recentRecordsEl.innerHTML = `
+        <div class="record-card">
+          <div class="record-icon"><span class="material-symbols-outlined">history</span></div>
+          <div class="record-body">
+            <h3 class="record-title">No completed records yet</h3>
+            <p class="record-copy">Start your first thought record to build your session history here.</p>
+          </div>
+        </div>
+      `;
+      sessionCountEl.textContent = '0';
+      sessionFillEl.style.width = '0%';
+      return;
+    }
+
+    sessionCountEl.textContent = String(items.length);
+    sessionFillEl.style.width = `${Math.min(items.length / 7, 1) * 100}%`;
+
+    recentRecordsEl.innerHTML = items.slice(-3).reverse().map((item, idx) => {
+      const emotion = item.emotion || 'Reflection';
+      const distortions = item.distortions || [];
+      return `
+        <a class="record-card ${idx === 1 ? 'is-highlight' : ''}" href="/reports/session/${encodeURIComponent(item.session_id)}">
+          <div class="record-icon">
+            <span class="material-symbols-outlined">${idx === 1 ? 'spa' : idx === 2 ? 'edit_note' : 'cloud_queue'}</span>
+          </div>
+          <div class="record-body">
+            <div class="record-top">
+              <span class="record-date">${formatDate(item.date)}</span>
+              <div class="record-tags">
+                <span class="tag tag-emotion">${emotion}</span>
+                <span class="tag tag-metric">${item.intensity_before != null && item.intensity_after != null ? `${item.intensity_before} -> ${item.intensity_after}` : 'Completed'}</span>
+              </div>
+            </div>
+            <h3 class="record-title">${buildTitle(item)}</h3>
+            <p class="record-copy">${buildSummary(item)}</p>
+          </div>
+          <div class="record-arrow">
+            <span class="material-symbols-outlined">arrow_forward_ios</span>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  async function loadRecentRecords() {
+    try {
+      const res = await fetch('/api/report-sessions');
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      renderRecentRecords(data.items || []);
+    } catch (err) {
+      recentRecordsEl.innerHTML = `
+        <div class="record-card">
+          <div class="record-icon"><span class="material-symbols-outlined">error</span></div>
+          <div class="record-body">
+            <h3 class="record-title">Could not load recent records</h3>
+            <p class="record-copy">You can still start a new session or open the report viewer.</p>
+          </div>
+        </div>
+      `;
+    }
   }
 
   function setUiState() {
     const hasSession = !!sessionId;
-    startScreen.classList.toggle('hidden', hasSession);
+    welcomePage.classList.toggle('hidden', hasSession);
     chatPanel.classList.toggle('hidden', !hasSession);
     sendBtn.disabled = !hasSession || sessionCompleted;
     inputEl.disabled = !hasSession || sessionCompleted;
-    newBtn.disabled = hasSession && !sessionCompleted;
     startBtn.disabled = hasSession && !sessionCompleted;
-    viewBtn.classList.toggle('hidden', !sessionCompleted || !recordUrl);
-    setMeta();
+    if (completionBannerEl) {
+      completionBannerEl.classList.toggle('hidden', !sessionCompleted || !recordUrl);
+    }
+    if (sessionMetaEl) {
+      sessionMetaEl.textContent = hasSession ? `Session ${sessionId} · Step ${currentStep}` : 'Session not started';
+    }
+    if (sessionLink) {
+      sessionLink.classList.toggle('active', hasSession);
+      if (hasSession) {
+        sessionLink.setAttribute('href', '#');
+      } else {
+        sessionLink.setAttribute('href', '/');
+      }
+    }
   }
 
   async function startSession() {
@@ -221,7 +1024,6 @@ def index() -> str:
     currentStep = null;
     sessionCompleted = false;
     recordUrl = null;
-    setMeta();
     setUiState();
 
     const res = await fetch('/api/start', { method: 'POST' });
@@ -233,8 +1035,6 @@ def index() -> str:
     const data = await res.json();
     sessionId = data.session_id;
     currentStep = data.current_step;
-    setMeta();
-    setRecord(data.thought_record);
     addMsg('assistant', data.message);
     setUiState();
   }
@@ -258,23 +1058,21 @@ def index() -> str:
     currentStep = data.current_step;
     sessionCompleted = data.session_completed;
     recordUrl = data.record_url;
-    setMeta();
-    setRecord(data.thought_record);
     addMsg('assistant', data.message);
+    if (sessionCompleted && recordUrl) {
+      viewBtn.onclick = () => { window.location.href = recordUrl; };
+    }
     setUiState();
   }
 
   sendBtn.addEventListener('click', sendMessage);
   newBtn.addEventListener('click', startSession);
   startBtn.addEventListener('click', startSession);
-  viewBtn.addEventListener('click', () => {
-    if (!recordUrl) return;
-    window.location.href = recordUrl;
-  });
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendMessage();
   });
 
+  loadRecentRecords();
   setUiState();
 </script>
 </body>
@@ -332,76 +1130,11 @@ def message(req: MessageRequest) -> MessageResponse:
 
 @app.get("/record/{session_id}", response_class=HTMLResponse)
 def record_page(session_id: str) -> str:
-    agent = _agents.get(session_id)
-    if agent is None:
-        p = Path(config.SESSIONS_DIR) / f"session_{session_id}.json"
-        if not p.exists():
-            raise HTTPException(status_code=404, detail="Session not found.")
-        data = json.loads(p.read_text(encoding="utf-8"))
-        if data.get("session_status") != "completed":
-            raise HTTPException(status_code=403, detail="Session not completed.")
-        record = data.get("thought_record", {})
-    else:
-        if agent.session_status != "completed":
-            raise HTTPException(status_code=403, detail="Session not completed.")
-        record = agent.thought_record
-
-    def fmt(v: Any) -> str:
-        if isinstance(v, list):
-            return "<br/>".join([str(x) for x in v])
-        return str(v)
-
-    rows = []
-    for k in [
-        "date",
-        "situation",
-        "emotion",
-        "intensity_before",
-        "automatic_thought",
-        "evidence_for",
-        "evidence_against",
-        "distortions",
-        "balanced_thought",
-        "intensity_after",
-        "summary",
-    ]:
-        if k in record:
-            rows.append(f"<tr><td>{k}</td><td>{fmt(record.get(k))}</td></tr>")
-
-    table_rows = "\n".join(rows)
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Thought Record</title>
-  <style>
-    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b1220; color: #e7eefc; }}
-    .wrap {{ max-width: 900px; margin: 0 auto; padding: 24px; }}
-    .top {{ display:flex; align-items:center; justify-content:space-between; gap:12px; }}
-    a {{ color:#9bb7ff; text-decoration:none; }}
-    a:hover {{ text-decoration:underline; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 16px; background:#0f1a30; border: 1px solid #1e2b47; border-radius: 12px; overflow: hidden; }}
-    td {{ padding: 12px; border-bottom: 1px solid #1e2b47; vertical-align: top; }}
-    td:first-child {{ width: 220px; opacity: .85; }}
-    tr:last-child td {{ border-bottom: none; }}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div style="font-size:18px; font-weight:650;">Thought Record</div>
-        <div style="font-size:12px; opacity:.8;">Session: {session_id}</div>
-      </div>
-      <div><a href="/">Back to Chat</a></div>
-    </div>
-    <table>
-      {table_rows}
-    </table>
-  </div>
-</body>
-</html>"""
+    try:
+        report = report_service.generate_report(mode="single", session_ids=[session_id], persist=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Session not found or not completed.") from exc
+    return _render_report_page(report)
 
 
 @app.get("/api/report-sessions")
@@ -490,11 +1223,81 @@ def _render_report_page(report: dict[str, Any]) -> str:
 
     def render_distribution(items: list[dict[str, Any]]) -> str:
         if not items:
-            return "<li>None</li>"
+            return "<li>None recorded</li>"
         return "".join(
             f"<li><strong>{esc(item.get('label'))}</strong>: {esc(item.get('count'))}</li>"
             for item in items
         )
+
+    page_css = """
+    :root {
+      --on-primary-fixed: #354339;
+      --outline-variant: #9db6c1;
+      --tertiary-container: #faf3e5;
+      --on-tertiary-container: #605b51;
+      --on-background: #1e363f;
+      --on-surface-variant: #4b636d;
+      --background: #f3fbff;
+      --surface-container-low: #e9f5fc;
+      --surface-container: #e0f0f9;
+      --surface-container-high: #d7ecf5;
+      --surface-container-highest: #cde7f2;
+      --primary: #546257;
+      --primary-dim: #48564c;
+      --primary-container: #d7e6d9;
+      --on-primary: #ecfcee;
+      --outline: #667e89;
+      --on-surface: #1e363f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Manrope', sans-serif; background: var(--background); color: var(--on-surface); }
+    .page-shell { position: relative; min-height: 100vh; overflow: hidden; }
+    .ambient-right, .ambient-left { position: fixed; border-radius: 9999px; filter: blur(120px); z-index: -1; pointer-events: none; }
+    .ambient-right { top: 18%; right: -120px; width: 380px; height: 380px; background: rgba(84, 98, 87, 0.08); }
+    .ambient-left { bottom: 14%; left: -120px; width: 420px; height: 420px; background: rgba(255, 219, 208, 0.18); }
+    .nav { position: fixed; top: 0; width: 100%; z-index: 50; backdrop-filter: blur(20px); background: rgba(243, 251, 255, 0.82); box-shadow: 0 1px 0 rgba(157, 182, 193, 0.15); }
+    .nav-inner, .wrap { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0; }
+    .brand { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em; color: var(--on-background); text-decoration: none; }
+    .nav-links { display: flex; align-items: center; gap: 32px; font-weight: 600; color: var(--on-surface-variant); }
+    .nav-links a { text-decoration: none; color: inherit; }
+    .nav-links a.active { color: var(--on-background); border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+    .nav-actions { display: flex; align-items: center; gap: 16px; color: var(--primary); }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 9999px; background: transparent; border: none; color: inherit; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .wrap { padding: 128px 0 88px; }
+    .hero { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom: 28px; }
+    .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: 12px; }
+    .page-title { margin: 0; font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 1.04; letter-spacing: -0.06em; color: var(--on-background); }
+    .page-subtle { margin-top: 10px; color: var(--on-surface-variant); font-size: .95rem; line-height: 1.7; }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding: 10px 16px; border-radius: 9999px; background: var(--tertiary-container); color: var(--on-tertiary-container); font-size: .86rem; font-weight: 700; }
+    .status-dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--primary); }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+    .panel { margin-top: 18px; background: rgba(255,255,255,.68); border: 1px solid rgba(157,182,193,.2); border-radius: 24px; padding: 22px; box-shadow: 0 22px 36px rgba(30,54,63,.05); }
+    .stat { background: rgba(215,236,245,.74); border: 1px solid rgba(157,182,193,.18); border-radius: 18px; padding: 18px; }
+    .label { font-size: .74rem; text-transform: uppercase; letter-spacing: .14em; color: rgba(75,99,109,.72); font-weight: 800; }
+    .value { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; margin-top: 8px; color: var(--on-background); }
+    .muted { color: var(--on-surface-variant); font-size: .92rem; line-height: 1.6; margin-top: 6px; }
+    .section-title { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 10px; }
+    .detail-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .14em; color: rgba(75,99,109,.72); font-weight: 800; margin-bottom: 10px; }
+    .detail-copy, p { margin: 0; white-space: pre-wrap; line-height: 1.8; color: var(--on-surface); }
+    ul { margin: 0; padding-left: 20px; color: var(--on-surface); line-height: 1.8; }
+    .session-list { display:flex; flex-direction:column; gap:16px; }
+    .session-card { display:block; text-decoration:none; color:inherit; background: rgba(215,236,245,.52); border: 1px solid rgba(157,182,193,.18); border-radius: 20px; padding: 20px; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .session-card:hover { transform: translateY(-2px); border-color: rgba(84,98,87,.24); box-shadow: 0 20px 32px rgba(30,54,63,.06); }
+    .session-top { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; margin-bottom: 10px; }
+    .session-name { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.02em; }
+    .pill-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .pill { display:inline-flex; align-items:center; padding: 7px 12px; border-radius: 9999px; background: var(--surface-container-highest); color: var(--on-surface-variant); font-size: .76rem; font-weight: 700; }
+    .pill.emotion { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+    .link-row { margin-top: 12px; color: var(--primary); font-weight: 700; display:inline-flex; align-items:center; gap:8px; }
+    @media (max-width: 900px) {
+      .nav-inner, .wrap { width: min(100% - 32px, 1180px); }
+      .nav-links { display:none; }
+      .hero { flex-direction: column; align-items: flex-start; }
+      .session-top { flex-direction: column; }
+    }
+    """
 
     if report_type == "single_session":
         item = sessions[0] if sessions else {}
@@ -504,110 +1307,83 @@ def _render_report_page(report: dict[str, Any]) -> str:
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Session Report {esc(item.get("session_id"))}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
-    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b1220; color: #e7eefc; }}
-    .wrap {{ max-width: 920px; margin: 0 auto; padding: 24px; }}
-    .top {{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }}
-    .panel {{ margin-top: 16px; background:#0f1a30; border:1px solid #1e2b47; border-radius: 12px; padding: 16px; }}
-    .grid {{ display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }}
-    .stat {{ background:#13203a; border:1px solid #24355a; border-radius: 10px; padding: 12px; }}
-    .label {{ font-size: 12px; opacity: .8; }}
-    .value {{ font-size: 24px; font-weight: 650; margin-top: 4px; }}
-    .card-title {{ font-size: 15px; font-weight: 650; margin-bottom: 8px; }}
-    .muted {{ font-size: 12px; opacity: .8; margin-top: 4px; }}
-    a {{ color:#9bb7ff; text-decoration:none; }}
-    a:hover {{ text-decoration:underline; }}
-    ul {{ margin: 8px 0 0 18px; }}
-    p {{ line-height: 1.6; white-space: pre-wrap; }}
+    {page_css}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div style="font-size:22px; font-weight:700;">Single Session Report</div>
-        <div class="muted">Session: {esc(item.get("session_id"))}</div>
-        <div class="muted">Generated at: {esc(report.get("generated_at"))}</div>
+  <div class="page-shell">
+    <div class="ambient-right"></div>
+    <div class="ambient-left"></div>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <div class="nav-links">
+          <a href="/">Welcome</a>
+          <a href="/">Session</a>
+          <a href="/reports" class="active">Reports</a>
+        </div>
+        <div class="nav-actions">
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">settings</span></button>
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">account_circle</span></button>
+        </div>
       </div>
-      <div><a href="/reports">Back to Reports</a></div>
-    </div>
+    </nav>
+    <main class="wrap">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Session Archive</div>
+          <h1 class="page-title">Single Session Report</h1>
+          <div class="page-subtle">Session {esc(item.get("session_id"))} · Generated at {esc(report.get("generated_at"))}</div>
+        </div>
+        <div class="status-pill"><span class="status-dot"></span><span>Reflection Complete</span></div>
+      </section>
 
-    <div class="grid">
-      <div class="stat">
-        <div class="label">Date</div>
-        <div class="muted">{esc(item.get("date"))}</div>
+      <div class="grid">
+        <div class="stat"><div class="label">Date</div><div class="muted">{esc(item.get("date"))}</div></div>
+        <div class="stat"><div class="label">Emotion</div><div class="value">{esc(item.get("emotion"))}</div></div>
+        <div class="stat"><div class="label">Intensity Before</div><div class="value">{esc(metrics.get("intensity_before"))}</div></div>
+        <div class="stat"><div class="label">Intensity After</div><div class="value">{esc(metrics.get("intensity_after"))}</div></div>
+        <div class="stat"><div class="label">Change</div><div class="muted">{esc(change_text(metrics.get("intensity_delta")))}</div></div>
       </div>
-      <div class="stat">
-        <div class="label">Emotion</div>
-        <div class="value">{esc(item.get("emotion"))}</div>
-      </div>
-      <div class="stat">
-        <div class="label">Before</div>
-        <div class="value">{esc(metrics.get("intensity_before"))}</div>
-      </div>
-      <div class="stat">
-        <div class="label">After</div>
-        <div class="value">{esc(metrics.get("intensity_after"))}</div>
-      </div>
-      <div class="stat">
-        <div class="label">Change</div>
-        <div class="muted">{esc(change_text(metrics.get("intensity_delta")))}</div>
-      </div>
-    </div>
 
-    <div class="panel">
-      <div class="card-title">Situation</div>
-      <p>{esc(item.get("situation"))}</p>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Automatic Thought</div>
-      <p>{esc(item.get("automatic_thought"))}</p>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Evidence For</div>
-      <ul>{render_lines(item.get("evidence_for") or [])}</ul>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Evidence Against</div>
-      <ul>{render_lines(item.get("evidence_against") or [])}</ul>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Distortions</div>
-      <ul>{render_lines(item.get("distortions") or [])}</ul>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Balanced Thought</div>
-      <p>{esc(item.get("balanced_thought"))}</p>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Summary</div>
-      <p>{esc(item.get("summary"))}</p>
-    </div>
+      <div class="panel"><div class="detail-title">Situation</div><p class="detail-copy">{esc(item.get("situation"))}</p></div>
+      <div class="panel"><div class="detail-title">Automatic Thought</div><p class="detail-copy">{esc(item.get("automatic_thought"))}</p></div>
+      <div class="panel"><div class="detail-title">Evidence For</div><ul>{render_lines(item.get("evidence_for") or [])}</ul></div>
+      <div class="panel"><div class="detail-title">Evidence Against</div><ul>{render_lines(item.get("evidence_against") or [])}</ul></div>
+      <div class="panel"><div class="detail-title">Distortions</div><ul>{render_lines(item.get("distortions") or [])}</ul></div>
+      <div class="panel"><div class="detail-title">Balanced Thought</div><p class="detail-copy">{esc(item.get("balanced_thought"))}</p></div>
+      <div class="panel"><div class="detail-title">Summary</div><p class="detail-copy">{esc(item.get("summary"))}</p></div>
+    </main>
   </div>
 </body>
 </html>"""
 
     def render_sessions(items: list[dict[str, Any]]) -> str:
         if not items:
-            return "<p>No sessions included.</p>"
+            return "<p class=\"muted\">No sessions included.</p>"
         cards = []
         for item in items:
             distortions = ", ".join(item.get("distortions") or []) or "None"
             cards.append(
                 f"""
-                <a class="card card-link" href="{esc(item.get("session_report_url"))}">
-                  <div class="card-title">Session {esc(item.get("session_id"))}</div>
-                  <div class="muted">{esc(item.get("date"))} | emotion: {esc(item.get("emotion"))}</div>
-                  <div><strong>Intensity</strong>: {esc(item.get("intensity_before"))} -> {esc(item.get("intensity_after"))}</div>
-                  <div><strong>Change</strong>: {esc(change_text(item.get("intensity_delta")))}</div>
-                  <div><strong>Distortions</strong>: {esc(distortions)}</div>
-                  <div><strong>Balanced thought</strong>: {esc(item.get("balanced_thought"))}</div>
+                <a class="session-card" href="{esc(item.get("session_report_url"))}">
+                  <div class="session-top">
+                    <div>
+                      <div class="session-name">Session {esc(item.get("session_id"))}</div>
+                      <div class="muted">{esc(item.get("date"))}</div>
+                    </div>
+                    <div class="pill-row">
+                      <span class="pill emotion">{esc(item.get("emotion"))}</span>
+                      <span class="pill">{esc(item.get("intensity_before"))} -> {esc(item.get("intensity_after"))}</span>
+                    </div>
+                  </div>
+                  <div class="muted"><strong>Change:</strong> {esc(change_text(item.get("intensity_delta")))}</div>
+                  <div class="muted"><strong>Distortions:</strong> {esc(distortions)}</div>
+                  <div class="muted"><strong>Balanced thought:</strong> {esc(item.get("balanced_thought"))}</div>
+                  <div class="link-row">View single report <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span></div>
                 </a>
                 """
             )
@@ -619,74 +1395,78 @@ def _render_report_page(report: dict[str, Any]) -> str:
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Report {esc(report_id)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
-    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b1220; color: #e7eefc; }}
-    .wrap {{ max-width: 1000px; margin: 0 auto; padding: 24px; }}
-    .top {{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }}
-    .grid {{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }}
-    .panel {{ margin-top: 16px; background:#0f1a30; border:1px solid #1e2b47; border-radius: 12px; padding: 16px; }}
-    .card {{ background:#13203a; border:1px solid #24355a; border-radius: 10px; padding: 12px; margin-top: 12px; }}
-    .card-link {{ display:block; color:inherit; text-decoration:none; }}
-    .card-link:hover {{ border-color:#4c7bff; background:#17274a; text-decoration:none; }}
-    .stat {{ background:#13203a; border:1px solid #24355a; border-radius: 10px; padding: 12px; }}
-    .label {{ font-size: 12px; opacity: .8; }}
-    .value {{ font-size: 24px; font-weight: 650; margin-top: 4px; }}
-    .muted {{ font-size: 12px; opacity: .8; margin-top: 4px; }}
-    .card-title {{ font-size: 15px; font-weight: 650; margin-bottom: 6px; }}
-    a {{ color:#9bb7ff; text-decoration:none; }}
-    a:hover {{ text-decoration:underline; }}
-    ul {{ margin: 8px 0 0 18px; }}
-    pre {{ white-space: pre-wrap; line-height: 1.5; }}
+    {page_css}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div style="font-size:22px; font-weight:700;">Saved Report</div>
-        <div class="muted">Report ID: {esc(report.get("report_id"))}</div>
-        <div class="muted">Generated at: {esc(report.get("generated_at"))}</div>
+  <div class="page-shell">
+    <div class="ambient-right"></div>
+    <div class="ambient-left"></div>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <div class="nav-links">
+          <a href="/">Welcome</a>
+          <a href="/">Session</a>
+          <a href="/reports" class="active">Reports</a>
+        </div>
+        <div class="nav-actions">
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">settings</span></button>
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">account_circle</span></button>
+        </div>
       </div>
-      <div><a href="/reports">Back to Reports</a></div>
-    </div>
+    </nav>
+    <main class="wrap">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Session Archives</div>
+          <h1 class="page-title">Your Insight Report</h1>
+          <div class="page-subtle">Report ID {esc(report.get("report_id"))} · Generated at {esc(report.get("generated_at"))}</div>
+        </div>
+        <div class="status-pill"><span class="status-dot"></span><span>Reflection Complete</span></div>
+      </section>
 
-    <div class="panel">
-      <div class="card-title">Scope</div>
-      <div class="muted">Mode: {esc(scope.get("mode"))}</div>
-      <div class="muted">Sessions included: {esc(len(sessions))}</div>
-      <div class="muted">Date range: {esc((scope.get("date_range") or {}).get("start"))} to {esc((scope.get("date_range") or {}).get("end"))}</div>
-    </div>
-
-    <div class="grid">
-      <div class="stat">
-        <div class="label">Sessions In Scope</div>
-        <div class="value">{esc(metrics.get("total_sessions_in_scope"))}</div>
+      <div class="panel">
+        <div class="section-title">Report Scope</div>
+        <div class="muted">Mode: {esc(scope.get("mode"))}</div>
+        <div class="muted">Sessions included: {esc(len(sessions))}</div>
+        <div class="muted">Date range: {esc((scope.get("date_range") or {}).get("start"))} to {esc((scope.get("date_range") or {}).get("end"))}</div>
       </div>
-      <div class="stat">
-        <div class="label">Improved Sessions</div>
-        <div class="value">{esc(metrics.get("improved_sessions"))}</div>
-        <div class="muted">out of {esc(metrics.get("total_sessions_in_scope"))}</div>
+
+      <div class="grid">
+        <div class="stat">
+          <div class="label">Sessions In Scope</div>
+          <div class="value">{esc(metrics.get("total_sessions_in_scope"))}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Improved Sessions</div>
+          <div class="value">{esc(metrics.get("improved_sessions"))}</div>
+          <div class="muted">out of {esc(metrics.get("total_sessions_in_scope"))}</div>
+        </div>
+        <div class="stat">
+          <div class="label">Average Change</div>
+          <div class="muted">{esc(change_text(metrics.get("average_intensity_delta")))}</div>
+        </div>
       </div>
-      <div class="stat">
-        <div class="label">Average Change</div>
-        <div class="muted">{esc(change_text(metrics.get("average_intensity_delta")))}</div>
+
+      <div class="panel">
+        <div class="section-title">Common Distortions</div>
+        <ul>{render_distribution(metrics.get("top_distortions") or [])}</ul>
       </div>
-    </div>
 
-    <div class="panel">
-      <div class="card-title">Common Distortions</div>
-      <ul>{render_distribution(metrics.get("top_distortions") or [])}</ul>
-    </div>
+      <div class="panel">
+        <div class="section-title">Common Emotions</div>
+        <ul>{render_distribution(metrics.get("top_emotions") or [])}</ul>
+      </div>
 
-    <div class="panel">
-      <div class="card-title">Common Emotions</div>
-      <ul>{render_distribution(metrics.get("top_emotions") or [])}</ul>
-    </div>
-
-    <div class="panel">
-      <div class="card-title">Sessions Included</div>
-      {render_sessions(sessions)}
-    </div>
+      <div class="panel">
+        <div class="section-title">Sessions Included</div>
+        <div class="session-list">{render_sessions(sessions)}</div>
+      </div>
+    </main>
   </div>
 </body>
 </html>"""
@@ -699,67 +1479,120 @@ def reports_home_page() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Report Viewer</title>
+  <title>The Quiet Sanctuary | Reports</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b1220; color: #e7eefc; }
-    .wrap { max-width: 1040px; margin: 0 auto; padding: 24px; }
-    .top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .panel { margin-top: 16px; background:#0f1a30; border:1px solid #1e2b47; border-radius: 12px; padding: 16px; }
-    .grid { display:grid; grid-template-columns: 280px 1fr; gap: 16px; margin-top: 16px; }
-    .card { background:#13203a; border:1px solid #24355a; border-radius:10px; padding:12px; }
-    .session { display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid #24355a; border-radius:10px; background:#13203a; margin-top:12px; }
-    .session:hover { border-color:#4c7bff; }
-    .meta { font-size:12px; opacity:.8; margin-top:4px; }
-    .title { font-size:22px; font-weight:700; }
-    .section-title { font-size:15px; font-weight:650; margin-bottom:8px; }
-    .controls { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    .stack > * + * { margin-top: 10px; }
-    input[type="number"] { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a3b63; background: #0b1326; color: #e7eefc; }
-    button, a.button { padding: 11px 14px; border-radius: 10px; border: 1px solid #2a3b63; background: #122046; color: #e7eefc; cursor: pointer; text-decoration:none; display:inline-block; }
-    button:hover, a.button:hover { background: #172a5a; }
-    button.primary { background: #2b67ff; border-color: #2b67ff; color: white; }
-    button.primary:hover { background: #2459da; border-color: #2459da; }
+    :root {
+      --outline-variant: #9db6c1;
+      --tertiary-container: #faf3e5;
+      --on-tertiary-container: #605b51;
+      --on-background: #1e363f;
+      --on-surface-variant: #4b636d;
+      --background: #f3fbff;
+      --surface-container-low: #e9f5fc;
+      --surface-container-high: #d7ecf5;
+      --surface-container-highest: #cde7f2;
+      --primary: #546257;
+      --primary-dim: #48564c;
+      --on-primary: #ecfcee;
+      --on-surface: #1e363f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Manrope', sans-serif; background: var(--background); color: var(--on-surface); }
+    .page-shell { position: relative; min-height: 100vh; overflow: hidden; }
+    .ambient-right, .ambient-left { position: fixed; border-radius: 9999px; filter: blur(120px); z-index: -1; pointer-events: none; }
+    .ambient-right { top: 18%; right: -120px; width: 380px; height: 380px; background: rgba(84, 98, 87, 0.08); }
+    .ambient-left { bottom: 14%; left: -120px; width: 420px; height: 420px; background: rgba(255, 219, 208, 0.18); }
+    .nav { position: fixed; top: 0; width: 100%; z-index: 50; backdrop-filter: blur(20px); background: rgba(243, 251, 255, 0.82); box-shadow: 0 1px 0 rgba(157, 182, 193, 0.15); }
+    .nav-inner, .wrap { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:24px 0; }
+    .brand { font-size:1.25rem; font-weight:800; letter-spacing:-0.03em; color:var(--on-background); text-decoration:none; }
+    .nav-links { display:flex; align-items:center; gap:32px; font-weight:600; color:var(--on-surface-variant); }
+    .nav-links a { text-decoration:none; color:inherit; }
+    .nav-links a.active { color: var(--on-background); border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+    .nav-actions { display:flex; align-items:center; gap:16px; color:var(--primary); }
+    .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:9999px; background:transparent; border:none; color:inherit; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .wrap { padding: 128px 0 88px; }
+    .hero { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom: 28px; }
+    .eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--on-surface-variant); margin-bottom:12px; }
+    .title { margin:0; font-size: clamp(2.6rem, 6vw, 4.6rem); line-height:1.04; letter-spacing:-0.06em; color:var(--on-background); }
+    .meta-head { margin-top:10px; color:var(--on-surface-variant); font-size:.96rem; line-height:1.7; max-width: 760px; }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:9999px; background:var(--tertiary-container); color:var(--on-tertiary-container); font-size:.86rem; font-weight:700; }
+    .status-dot { width:8px; height:8px; border-radius:9999px; background:var(--primary); }
+    .grid { display:grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 16px; }
+    .panel { margin-top: 16px; background: rgba(255,255,255,.68); border:1px solid rgba(157,182,193,.2); border-radius: 24px; padding: 22px; box-shadow: 0 22px 36px rgba(30,54,63,.05); }
+    .session { display:flex; gap:14px; align-items:flex-start; padding:18px; border:1px solid rgba(157,182,193,.18); border-radius:20px; background: rgba(215,236,245,.52); margin-top:12px; }
+    .session:hover { border-color: rgba(84,98,87,.24); }
+    .meta { font-size: .9rem; color: var(--on-surface-variant); margin-top:6px; line-height:1.6; }
+    .section-title { font-size:1.1rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:10px; }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .stack > * + * { margin-top: 12px; }
+    input[type="number"] { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(157,182,193,.25); background: rgba(255,255,255,.82); color: var(--on-surface); font-family: inherit; }
+    button, a.button { padding: 14px 18px; border-radius: 14px; border: 1px solid rgba(157,182,193,.25); background: rgba(255,255,255,.8); color: var(--on-surface); cursor: pointer; text-decoration:none; display:inline-block; font-family: inherit; font-weight: 700; }
+    button.primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dim) 100%); color: var(--on-primary); border: none; box-shadow: 0 16px 30px rgba(84, 98, 87, 0.16); }
     button:disabled { opacity:.55; cursor:not-allowed; }
-    .hint { font-size:12px; opacity:.78; line-height:1.5; }
-    .empty { opacity:.8; }
-    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .hint { font-size:.9rem; color: var(--on-surface-variant); line-height:1.7; }
+    .empty { color: var(--on-surface-variant); }
+    .quick-link { color: var(--primary); text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:8px; margin-top:10px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .nav-inner, .wrap { width: min(100% - 32px, 1180px); } .nav-links { display:none; } .hero { flex-direction: column; align-items:flex-start; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="title">Independent Report Viewer</div>
-        <div class="meta">Reports here are generated directly from completed sessions.</div>
+  <div class="page-shell">
+    <div class="ambient-right"></div>
+    <div class="ambient-left"></div>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <div class="nav-links">
+          <a href="/">Welcome</a>
+          <a href="/">Session</a>
+          <a href="/reports" class="active">Reports</a>
+        </div>
+        <div class="nav-actions">
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">settings</span></button>
+          <button class="icon-btn" type="button"><span class="material-symbols-outlined">account_circle</span></button>
+        </div>
       </div>
-      <div><a class="button" href="/">Back to Chat</a></div>
-    </div>
+    </nav>
+    <main class="wrap">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Session Archives</div>
+          <h1 class="title">Independent Report Viewer</h1>
+          <div class="meta-head">Open a single-session reflection or combine completed sessions into one broader report. Everything here is generated directly from your saved sessions.</div>
+        </div>
+        <div class="status-pill"><span class="status-dot"></span><span>Reports Ready</span></div>
+      </section>
 
-    <div class="grid">
-      <div class="stack">
-        <div class="panel">
-          <div class="section-title">Recent Report</div>
-          <div class="hint">Open a report for the most recent completed sessions.</div>
-          <div class="controls">
-            <input id="recentLimit" type="number" min="1" max="50" value="3" />
-            <button id="recentBtn" class="primary">Open Recent Report</button>
+      <div class="grid">
+        <div class="stack">
+          <div class="panel">
+            <div class="section-title">Recent Report</div>
+            <div class="hint">Open a report for the most recent completed sessions.</div>
+            <div class="controls">
+              <input id="recentLimit" type="number" min="1" max="50" value="3" />
+              <button id="recentBtn" class="primary">Open Recent Report</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="section-title">Custom Report</div>
+            <div class="hint">Select one or more completed sessions, then open a combined report.</div>
+            <div class="controls">
+              <button id="customBtn" class="primary" disabled>Open Selected Sessions</button>
+            </div>
           </div>
         </div>
 
         <div class="panel">
-          <div class="section-title">Custom Report</div>
-          <div class="hint">Select two or more completed sessions, then open a combined report.</div>
-          <div class="controls">
-            <button id="customBtn" class="primary" disabled>Open Selected Sessions</button>
-          </div>
+          <div class="section-title">Completed Sessions</div>
+          <div id="sessionList" class="empty">Loading sessions...</div>
         </div>
       </div>
-
-      <div class="panel">
-        <div class="section-title">Completed Sessions</div>
-        <div id="sessionList" class="empty">Loading sessions...</div>
-      </div>
-    </div>
+    </main>
   </div>
 
 <script>

@@ -63,6 +63,19 @@ def ensure_support_guidance(message: str, risk_level: str, include_safety_note: 
     if not guidance:
         return message
     lowered = message.lower()
-    if any(token in lowered for token in ["professional support", "someone you trust", "trusted person", "emergency help"]):
+    if any(
+        token in lowered
+        for token in [
+            "professional support",
+            "someone you trust",
+            "trusted person",
+            "emergency help",
+            "reach out",
+            "resources available",
+            "people who care",
+            "unsafe right now",
+            "overwhelming",
+        ]
+    ):
         return message
     return f"{message}\n\n{guidance}"

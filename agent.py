@@ -337,7 +337,7 @@ SAFETY CONTEXT:
 - reason: {safety_reason}
 - include_safety_note_this_turn: {include_safety_note}
 - If include_safety_note_this_turn is true, include 1-2 warm, natural sentences acknowledging pain.
-- If include_safety_note_this_turn is true, you should also explicitly encourage the user to seek trusted or professional support if they may be unsafe.
+- If include_safety_note_this_turn is true, focus on warm acknowledgment first; do NOT add a second standalone support-reminder sentence if the system already handles that elsewhere.
 - If include_safety_note_this_turn is true and you continue the CBT task, keep the follow-up question especially gentle, grounded, and brief.
 - Avoid abrupt reset phrases such as "Let's go back to the beginning" or other brisk workflow language right after a safety note.
 - If the missing field is an emotion intensity rating, ask how strong the emotion felt at the time or at its peak; do NOT literally explain the internal field name "intensity_before" and do NOT ask "before you started to think about" the event.

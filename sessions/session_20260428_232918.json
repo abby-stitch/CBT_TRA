@@ -1,0 +1,48 @@
+{
+  "session_id": "20260428_232918",
+  "last_updated": "2026-04-28 23:31:45",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_state": "supportive_warning",
+  "safety_reason": "Expresses feeling like life is a waste, indicating hopelessness and some distress.",
+  "last_safety_warning_turn": 1,
+  "thought_record": {
+    "date": "2026-04-28 23:29",
+    "situation": "I don't know what I want to do for my career.",
+    "emotion": "",
+    "intensity_before": 0,
+    "automatic_thought": "I will be a failure and waste my life.",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I don't know what I want to do for my career. I feel I will be a failure and waste my life."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're feeling really stuck and worried about your future right now, and it's understandable to feel distressed when facing big life questions. If you're finding these feelings overwhelming, please remember there are people who care and resources available to support you. \n\nThinking about when this started—as you considered your career options—how strong did that feeling feel at the time, on a scale of 0 to 100?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I don't know what I want to do for my career. I feel I will be a failure and waste my life.",
+      "assistant": "It sounds like you're feeling really stuck and worried about your future right now, and it's understandable to feel distressed when facing big life questions. If you're finding these feelings overwhelming, please remember there are people who care and resources available to support you. \n\nThinking about when this started—as you considered your career options—how strong did that feeling feel at the time, on a scale of 0 to 100?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support.",
+      "risk_state": "supportive_warning",
+      "risk_reason": "Expresses feeling like life is a waste, indicating hopelessness and some distress.",
+      "include_safety_note": true
+    }
+  ]
+}
