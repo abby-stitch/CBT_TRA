@@ -137,3 +137,73 @@ uvicorn web_app:app --reload --port 8000
 - `thought_record`（核心表单）
 - `chat_history`（消息级别历史）
 - `turns`（每一轮的 step_before/step_after/user/assistant 事件日志）
+
+---
+
+## 独立报告功能怎么用
+
+如果你不想先做网页前端，可以直接把“报告生成”当作独立功能使用。当前仓库已经提供独立脚本：
+
+- `report_cli.py`
+
+它会直接读取 `sessions/` 里的已完成 session，并把结果保存到 `reports/`。
+
+### 1) 查看哪些 completed sessions 可以拿来做报告
+
+```bash
+python3 report_cli.py list-sessions
+```
+
+### 2) 生成单个 session 报告
+
+```bash
+python3 report_cli.py generate --mode single --session-id 20260427_223447
+```
+
+### 3) 生成最近 N 个 session 的汇总报告
+
+```bash
+python3 report_cli.py generate --mode recent --limit 5
+```
+
+### 4) 自定义多个 session 生成报告
+
+```bash
+python3 report_cli.py generate --mode custom --session-ids 20260424_172104,20260424_173332,20260427_223447
+```
+
+### 5) 如果只想先测试结构，不调用 LLM 总结
+
+```bash
+python3 report_cli.py generate --mode recent --limit 5 --no-llm-summary
+```
+
+### 6) 直接在网页查看报告效果
+
+启动服务：
+
+```bash
+uvicorn web_app:app --reload --port 8000
+```
+
+然后在浏览器打开：
+
+- 报告入口页（推荐）：
+  - `http://127.0.0.1:8000/reports`
+- 单个 session 报告：
+  - `http://127.0.0.1:8000/reports/session/20260427_223447`
+- 多个 session 报告（最近 N 个）：
+  - `http://127.0.0.1:8000/reports/multi?mode=recent&limit=3`
+- 多个 session 报告（自定义 session）：
+  - `http://127.0.0.1:8000/reports/multi?mode=custom&session_ids=20260424_172104,20260426_234844,20260427_223447`
+
+### 当前建议的开发顺序
+
+建议你先把报告功能当成独立后端能力完成：
+
+1. session 筛选逻辑
+2. 单 session / 多 session 报告结构
+3. 报告保存与读取
+4. 最后再单独做前端页面，把这些能力接进去
+
+这样网页只负责“展示”和“选择”，不会反过来限制你的功能设计。

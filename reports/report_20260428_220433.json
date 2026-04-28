@@ -1,0 +1,269 @@
+{
+  "report_id": "20260428_220433",
+  "generated_at": "2026-04-28 22:04:33",
+  "scope": {
+    "mode": "recent",
+    "requested_limit": 5,
+    "session_ids": [
+      "20260422_212644",
+      "20260424_172104",
+      "20260424_173332",
+      "20260426_234844",
+      "20260427_223447"
+    ],
+    "date_range": {
+      "start": "2026-04-22 21:26",
+      "end": "2026-04-27 22:34"
+    }
+  },
+  "metrics": {
+    "total_sessions_in_scope": 5,
+    "average_intensity_before": 71,
+    "average_intensity_after": 57,
+    "average_intensity_delta": -14,
+    "improved_sessions": 5,
+    "top_emotions": [
+      {
+        "label": "hopeless",
+        "count": 1,
+        "ratio": 0.2
+      },
+      {
+        "label": "worthless",
+        "count": 1,
+        "ratio": 0.2
+      },
+      {
+        "label": "panicked",
+        "count": 1,
+        "ratio": 0.2
+      },
+      {
+        "label": "upset",
+        "count": 1,
+        "ratio": 0.2
+      },
+      {
+        "label": "disappointed",
+        "count": 1,
+        "ratio": 0.2
+      }
+    ],
+    "top_distortions": [
+      {
+        "label": "All-or-nothing thinking",
+        "count": 4,
+        "ratio": 0.8
+      },
+      {
+        "label": "Emotional reasoning",
+        "count": 4,
+        "ratio": 0.8
+      },
+      {
+        "label": "Magnification/minimization",
+        "count": 3,
+        "ratio": 0.6
+      },
+      {
+        "label": "Should statements",
+        "count": 1,
+        "ratio": 0.2
+      },
+      {
+        "label": "Labeling",
+        "count": 1,
+        "ratio": 0.2
+      }
+    ],
+    "emotion_trend": [
+      {
+        "session_id": "20260422_212644",
+        "date": "2026-04-22 21:26",
+        "emotion": "hopeless",
+        "before": 80,
+        "after": 55,
+        "delta": -25,
+        "distortions": [
+          "All-or-nothing thinking",
+          "Should statements",
+          "Emotional reasoning"
+        ]
+      },
+      {
+        "session_id": "20260424_172104",
+        "date": "2026-04-24 17:21",
+        "emotion": "worthless",
+        "before": 70,
+        "after": 60,
+        "delta": -10,
+        "distortions": [
+          "All-or-nothing thinking",
+          "Magnification/minimization",
+          "Emotional reasoning"
+        ]
+      },
+      {
+        "session_id": "20260424_173332",
+        "date": "2026-04-24 17:33",
+        "emotion": "panicked",
+        "before": 70,
+        "after": 60,
+        "delta": -10,
+        "distortions": [
+          "Magnification/minimization",
+          "All-or-nothing thinking",
+          "Emotional reasoning"
+        ]
+      },
+      {
+        "session_id": "20260426_234844",
+        "date": "2026-04-26 23:48",
+        "emotion": "upset",
+        "before": 65,
+        "after": 50,
+        "delta": -15,
+        "distortions": [
+          "Emotional reasoning"
+        ]
+      },
+      {
+        "session_id": "20260427_223447",
+        "date": "2026-04-27 22:34",
+        "emotion": "disappointed",
+        "before": 70,
+        "after": 60,
+        "delta": -10,
+        "distortions": [
+          "Labeling",
+          "All-or-nothing thinking",
+          "Magnification/minimization"
+        ]
+      }
+    ],
+    "distortion_trends": [
+      {
+        "label": "All-or-nothing thinking",
+        "total_count": 4,
+        "earlier_count": 2,
+        "later_count": 2,
+        "direction": "flat",
+        "current_streak": 1
+      },
+      {
+        "label": "Emotional reasoning",
+        "total_count": 4,
+        "earlier_count": 2,
+        "later_count": 2,
+        "direction": "flat",
+        "current_streak": 0
+      },
+      {
+        "label": "Magnification/minimization",
+        "total_count": 3,
+        "earlier_count": 1,
+        "later_count": 2,
+        "direction": "up",
+        "current_streak": 1
+      },
+      {
+        "label": "Labeling",
+        "total_count": 1,
+        "earlier_count": 0,
+        "later_count": 1,
+        "direction": "up",
+        "current_streak": 1
+      },
+      {
+        "label": "Should statements",
+        "total_count": 1,
+        "earlier_count": 1,
+        "later_count": 0,
+        "direction": "down",
+        "current_streak": 0
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "session_id": "20260422_212644",
+      "date": "2026-04-22 21:26",
+      "session_status": "completed",
+      "emotion": "hopeless",
+      "intensity_before": 80,
+      "intensity_after": 55,
+      "intensity_delta": -25,
+      "distortions": [
+        "All-or-nothing thinking",
+        "Should statements",
+        "Emotional reasoning"
+      ],
+      "balanced_thought": "As a human being, feeling tired is quite normal. Even though I use my phone very late at night and it affects my sleep, it helps me to improve my mood. I just need to find a balance between sleep and entertainment, and no need to judge myself without mercy.",
+      "summary": "It sounds like you've done some great work here! You identified your situation clearly, and explored both sides of the coin with evidence for and against your initial feeling of hopelessness.  Recognizing those thought distortions like all-or-nothing thinking and should statements helped shift your perspective to a more balanced one. It’s encouraging to see that your intensity level decreased after working through these thoughts. Remember, finding balance is key! Keep practicing this technique – it can be really helpful for managing challenging emotions."
+    },
+    {
+      "session_id": "20260424_172104",
+      "date": "2026-04-24 17:21",
+      "session_status": "completed",
+      "emotion": "worthless",
+      "intensity_before": 70,
+      "intensity_after": 60,
+      "intensity_delta": -10,
+      "distortions": [
+        "All-or-nothing thinking",
+        "Magnification/minimization",
+        "Emotional reasoning"
+      ],
+      "balanced_thought": "I'm new here and still learning, so it makes sense that I'm facing some challenges. It takes time to grow and understand a new role.  I can be kind to myself and focus on making progress instead of being too hard on myself.",
+      "summary": "It sounds like you've done some great work identifying your challenging thoughts and feelings during this internship. It's understandable to feel overwhelmed when starting something new, especially with a lot to learn. You recognized how your \"I have no value\" thought might be influenced by all-or-nothing thinking, magnification/minimization, and emotional reasoning. Shifting your perspective to one of kindness and progress – acknowledging that learning takes time – helped lower the intensity of those feelings. Keep practicing these thought-record skills; they can be incredibly helpful in navigating tough situations!"
+    },
+    {
+      "session_id": "20260424_173332",
+      "date": "2026-04-24 17:33",
+      "session_status": "completed",
+      "emotion": "panicked",
+      "intensity_before": 70,
+      "intensity_after": 60,
+      "intensity_delta": -10,
+      "distortions": [
+        "Magnification/minimization",
+        "All-or-nothing thinking",
+        "Emotional reasoning"
+      ],
+      "balanced_thought": "It takes time to find what I'm useful for, and I will keep learning.",
+      "summary": "It sounds like those first few days of your internship were really challenging, feeling panicked with a 70 out of 100 intensity level when you had thoughts about being useless and not contributing. You identified some key evidence for and against these thoughts,  and recognized some cognitive distortions might be at play like magnification/minimization, all-or-nothing thinking, and emotional reasoning. By shifting your perspective to \"It takes time to find what I'm useful for, and I will keep learning,\" your intensity reduced to 60 out of 100.  This shows real effort in self-reflection and challenging those negative thoughts. Keep practicing these techniques - you're making progress!"
+    },
+    {
+      "session_id": "20260426_234844",
+      "date": "2026-04-26 23:48",
+      "session_status": "completed",
+      "emotion": "upset",
+      "intensity_before": 65,
+      "intensity_after": 50,
+      "intensity_delta": -15,
+      "distortions": [
+        "Emotional reasoning"
+      ],
+      "balanced_thought": "Recently I'm really busy, and it is quite normal that I will make some mistakes. I just accept it and also accept the situation that my roomate will be angry.",
+      "summary": "Okay, let's wrap up this thought record. \n\nIt looks like when you forgot your keys, leading to your roommate's frustration, you felt upset (65/100). This brought up the thought that you feel like you have no use. You explored how that thought might be linked to emotional reasoning, and considered evidence both for and against it – recognizing both times you’ve struggled and times you’ve been supportive to others. \n\nYou then shifted to a more balanced perspective: acknowledging you’ve been busy, mistakes happen, and accepting both the situation and your roommate’s reaction. After that, your intensity came down to 50/100.\n\nThat's great work thoughtfully examining this situation and finding a more balanced way to view it. It takes courage to look at these thoughts and challenge them, and you did that really well here. Remember you can use this process with other difficult situations as they arise."
+    },
+    {
+      "session_id": "20260427_223447",
+      "date": "2026-04-27 22:34",
+      "session_status": "completed",
+      "emotion": "disappointed",
+      "intensity_before": 70,
+      "intensity_after": 60,
+      "intensity_delta": -10,
+      "distortions": [
+        "Labeling",
+        "All-or-nothing thinking",
+        "Magnification/minimization"
+      ],
+      "balanced_thought": "I'm new here, and still trying to learn and understand the work, I'm keep going, I should allow some space and time to let myself grow. If I always thinking myself negatively, it will really block my way. Just take a deep breath, I can undertake the responsibility, so I should be brave to learn, don't look down yourself, abby.",
+      "summary": "Okay, Abby, let's wrap things up. It sounds like today’s situation at your internship brought up a lot of disappointment – a 70 out of 100 initially. We explored how the thought “I have no value” came up, and looked at evidence both for and against that belief. It was helpful to identify those thinking patterns – labeling, all-or-nothing thinking, and magnification – that were contributing to how strong that feeling was. \n\nYou then came up with a more balanced thought: acknowledging that you’re new, still learning, and need to give yourself space to grow. That’s great self-compassion. It looks like that shift helped bring your intensity down to a 60. \n\nYou did a lot of work today to untangle this, and it’s a good first step in recognizing and challenging those automatic negative thoughts. Remember you’re still growing, and it’s okay to not have all the answers right away."
+    }
+  ],
+  "llm_summary": "## Thought Record Progress Summary\n\nHere’s a quick look at your work with the thought record tool over the past few days. Remember, this isn't a diagnosis – just a way to observe patterns in your thinking.\n\n**1. Patterns Noticed**\n\nYour records show you’ve been working with a range of emotions, including feelings of hopelessness, worthlessness, panic, upset and disappointment. Recurring ways of thinking – or distortions – have included “All-or-nothing thinking” and “Emotional reasoning”, appearing in most sessions. “Magnification/minimization” also appears frequently.\n\n**2. Possible Changes Over Time**\n\nAcross your sessions, the intensity of your feelings has generally decreased after using the tool, which is great! It’s also interesting to note that while “All-or-nothing thinking” and “Emotional reasoning” have been consistent, “Should statements” appeared less frequently in later records. This *might* suggest a gentle shift in how you approach self-criticism.\n\n**3. Gentle Suggestions for Future Practice**\n\nKeep noticing those common thinking patterns! Specifically challenging “All-or-nothing thinking” and “Emotional reasoning” could be helpful as you continue. Remember to be kind to yourself throughout the process – identifying these thoughts is a positive step, and practice makes progress. You are doing well to consistently reflect and reframe your thoughts.",
+  "llm_error": null
+}
