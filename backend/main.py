@@ -1,4 +1,4 @@
-from agent import CBTAgent
+from backend.agent import CBTAgent
 
 agent = CBTAgent()
 print(f"=== CBT Session Started (ID: {agent.session_id}) ===")

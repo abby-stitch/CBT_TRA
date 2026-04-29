@@ -7,7 +7,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-import config
+from backend import config
 
 
 def _reports_dir() -> Path:

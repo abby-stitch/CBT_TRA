@@ -3,9 +3,11 @@
 本仓库当前主要用于验证一个 CBT Thought Record Agent 的“终端交互版”和“网页交互版”两种运行方式。两者复用同一套核心逻辑：`CBTAgent.extract_and_fill()`（抽取并更新 thought_record）+ `CBTAgent.respond()`（生成下一轮对话引导），并在每一轮对话后把会话保存为 JSON 文件。
 
 目录位置：
-- 终端版入口：`doubaotest/main.py`
-- 网页版入口：`doubaotest/web_app.py`
-- 核心 Agent：`doubaotest/agent.py`
+- 终端版入口：`doubaotest/backend/main.py`
+- API 后端入口：`doubaotest/backend/api_app.py`
+- 旧版一体化网页入口：`doubaotest/backend/web_app.py`
+- React 前端：`doubaotest/frontend/`
+- 核心 Agent：`doubaotest/backend/agent.py`
 - 会话保存目录：`doubaotest/sessions/`（每轮都会写入 `session_<session_id>.json`）
 
 ---
@@ -29,9 +31,9 @@ uv sync
 pip install -e .
 ```
 
-### 3) 配置（config.py）
+### 3) 配置（backend/config.py）
 
-本项目把“可变项”集中放在 `config.py` 里，`config.py` 中写的就是默认值（default）。用户要修改行为时，直接改 `config.py` 即可。
+本项目把“可变项”集中放在 `backend/config.py` 里，`backend/config.py` 中写的就是默认值（default）。用户要修改行为时，直接改 `backend/config.py` 即可。
 
 - 切换模型名：修改 `LLM_MODEL`
 - 切换 Ollama 地址：修改 `LLM_URL`
@@ -64,11 +66,11 @@ Terminal 版本就是把一次 CBT 会话当作一个循环：你每输入一段
 
 ### 启动方式
 
-推荐在 `doubaotest/` 目录下运行（因为脚本用相对导入 `from agent import CBTAgent`）：
+推荐在 `doubaotest/` 目录下运行：
 
 ```bash
 cd doubaotest
-python main.py
+uv run python -m backend.main
 ```
 
 ### 交互方式
@@ -100,15 +102,47 @@ Web App 的目标是把 Terminal 里的“输入/输出循环”改成“浏览�
 
 ### 启动方式（FastAPI + Uvicorn）
 
-同样推荐在 `doubaotest/` 目录下启动：
+旧版一体化 FastAPI 页面仍然保留，推荐只作为对照使用：
 
 ```bash
 cd doubaotest
-uvicorn web_app:app --reload --port 8000
+uv run uvicorn backend.web_app:app --reload --port 8000
 ```
 
-打开浏览器访问：
-- http://127.0.0.1:8000/
+如果只想启动给新前端使用的 API-only 后端，使用：
+
+```bash
+uv run uvicorn backend.api_app:app --reload --port 8000
+```
+
+`backend/api_app.py` 只保留 JSON API，不包含 `backend/web_app.py` 里直接拼接的 HTML/CSS/JS 页面。
+
+新的 React 前端在 `frontend/` 目录下。第一次运行需要安装依赖：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+然后打开：
+
+- http://127.0.0.1:5173/
+
+开发时前端会通过 Vite proxy 把 `/api/...` 请求转发到 `http://127.0.0.1:8000`，所以需要同时启动上面的 `backend.api_app` 后端。
+
+React 前端目前接管这些页面：
+
+- `/`
+- `/reports`
+- `/reports/session/<session_id>`
+- `/reports/multi?mode=recent&limit=3`
+- `/reports/multi?mode=custom&session_ids=<id1,id2>`
+
+旧的 `backend/web_app.py` 仍然保留，主要作为迁移前的一体化页面对照。
+
+打开 React 前端访问：
+- http://127.0.0.1:5173/
 
 ### 页面怎么用
 
@@ -120,16 +154,19 @@ uvicorn web_app:app --reload --port 8000
 
 ### 网页版的关键接口（便于调试）
 
-- `GET /`：返回页面（HTML/CSS/JS 是直接写在 `web_app.py` 的字符串里）
+- `GET /api/health`：健康检查
 - `POST /api/start`：创建新 session，返回开场白 + 初始 thought_record
 - `POST /api/message`：处理一轮用户消息（抽取、hard-check、生成回复、保存 session）
-- `GET /record/{session_id}`：展示最终 thought record（只允许已完成的 session）
+- `GET /api/report-sessions`：列出 completed sessions
+- `GET /api/reports/session/{session_id}`：生成单个 session 的报告数据
+- `GET /api/reports/multi`：生成多 session 的报告数据
+- `POST /api/reports/generate`：生成并保存 report JSON
 
 ---
 
 ## 数据保存位置
 
-每轮对话都会保存会话 JSON 到 `SESSIONS_DIR` 指定的目录下（默认 `sessions/`，见 `config.py`）：
+每轮对话都会保存会话 JSON 到 `SESSIONS_DIR` 指定的目录下（默认项目根目录的 `sessions/`，见 `backend/config.py`）：
 
 - `sessions/session_<session_id>.json`
 
@@ -144,38 +181,38 @@ uvicorn web_app:app --reload --port 8000
 
 如果你不想先做网页前端，可以直接把“报告生成”当作独立功能使用。当前仓库已经提供独立脚本：
 
-- `report_cli.py`
+- `backend/report_cli.py`
 
 它会直接读取 `sessions/` 里的已完成 session，并把结果保存到 `reports/`。
 
 ### 1) 查看哪些 completed sessions 可以拿来做报告
 
 ```bash
-python3 report_cli.py list-sessions
+uv run python -m backend.report_cli list-sessions
 ```
 
 ### 2) 生成单个 session 报告
 
 ```bash
-python3 report_cli.py generate --mode single --session-id 20260427_223447
+uv run python -m backend.report_cli generate --mode single --session-id 20260427_223447
 ```
 
 ### 3) 生成最近 N 个 session 的汇总报告
 
 ```bash
-python3 report_cli.py generate --mode recent --limit 5
+uv run python -m backend.report_cli generate --mode recent --limit 5
 ```
 
 ### 4) 自定义多个 session 生成报告
 
 ```bash
-python3 report_cli.py generate --mode custom --session-ids 20260424_172104,20260424_173332,20260427_223447
+uv run python -m backend.report_cli generate --mode custom --session-ids 20260424_172104,20260424_173332,20260427_223447
 ```
 
 ### 5) 如果只想先测试结构，不调用 LLM 总结
 
 ```bash
-python3 report_cli.py generate --mode recent --limit 5 --no-llm-summary
+uv run python -m backend.report_cli generate --mode recent --limit 5
 ```
 
 ### 6) 直接在网页查看报告效果
@@ -183,19 +220,19 @@ python3 report_cli.py generate --mode recent --limit 5 --no-llm-summary
 启动服务：
 
 ```bash
-uvicorn web_app:app --reload --port 8000
+uv run uvicorn backend.api_app:app --reload --port 8000
 ```
 
 然后在浏览器打开：
 
 - 报告入口页（推荐）：
-  - `http://127.0.0.1:8000/reports`
+  - `http://127.0.0.1:5173/reports`
 - 单个 session 报告：
-  - `http://127.0.0.1:8000/reports/session/20260427_223447`
+  - `http://127.0.0.1:5173/reports/session/20260427_223447`
 - 多个 session 报告（最近 N 个）：
-  - `http://127.0.0.1:8000/reports/multi?mode=recent&limit=3`
+  - `http://127.0.0.1:5173/reports/multi?mode=recent&limit=3`
 - 多个 session 报告（自定义 session）：
-  - `http://127.0.0.1:8000/reports/multi?mode=custom&session_ids=20260424_172104,20260426_234844,20260427_223447`
+  - `http://127.0.0.1:5173/reports/multi?mode=custom&session_ids=20260424_172104,20260426_234844,20260427_223447`
 
 ### 当前建议的开发顺序
 

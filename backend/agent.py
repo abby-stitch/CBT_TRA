@@ -3,13 +3,13 @@ import re
 import os
 from datetime import datetime
 
-from prompts import CBTPrompts
-from knowledge_base import DistortionKnowledge
+from backend.prompts import CBTPrompts
+from backend.knowledge_base import DistortionKnowledge
 
-import config
-import llm_io
-import safety
-import storage
+from backend import config
+from backend import llm_io
+from backend import safety
+from backend import storage
 
 
 def _require_config_str(name: str) -> str:

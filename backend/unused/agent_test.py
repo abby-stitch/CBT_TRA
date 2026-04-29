@@ -3,7 +3,7 @@ import requests
 import re
 import os
 from datetime import datetime
-from prompts import CBTPrompts
+from backend.prompts import CBTPrompts
 
 class CBTAgentTest:
     def __init__(self, step=1, initial_record=None, model="gemma2:9b"):

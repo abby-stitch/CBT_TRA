@@ -4,8 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
-import config
-import report_service
+from backend import config
+from backend import report_service
 
 
 def _print_json(data: object) -> None:

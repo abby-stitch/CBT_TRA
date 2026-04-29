@@ -11,14 +11,15 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-BASE_DIR = Path(__file__).resolve().parent
-os.chdir(BASE_DIR)
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
+BACKEND_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BACKEND_DIR.parent
+os.chdir(PROJECT_ROOT)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-import config
-from agent import CBTAgent
-import report_service
+from backend import config
+from backend.agent import CBTAgent
+from backend import report_service
 
 app = FastAPI()
 _agents: dict[str, CBTAgent] = {}

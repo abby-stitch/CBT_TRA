@@ -1,4 +1,4 @@
-from knowledge_base import DistortionKnowledge
+from backend.knowledge_base import DistortionKnowledge
 
 
 class CBTPrompts:
