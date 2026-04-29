@@ -43,14 +43,32 @@ pip install -e .
 默认配置为 Ollama：
 - `LLM_PROVIDER = "ollama"`
 - `LLM_URL = "http://localhost:11434/api/generate"`
-- `LLM_MODEL = "gemma2:9b"`
+- `LLM_MODEL = "gemma3:27b"`
 
-如果你使用的是 Ollama，请确保 Ollama 在运行，并且已拉取你在 `LLM_MODEL` 中设置的模型：
+#### Ollama 模型说明
+
+本项目不会打包或内置任何 Ollama 模型。模型由用户根据自己的电脑性能和使用需求，在本机 Ollama 中自行下载；项目只会读取 `backend/config.py` 里的 `LLM_MODEL` 配置，并调用本地 Ollama 服务。
+
+如果你使用的是 Ollama，请先安装并启动 Ollama，然后拉取你想使用的模型。例如当前默认配置是 `gemma3:27b`：
 
 ```bash
 ollama serve
-ollama pull gemma2:9b
+ollama pull gemma3:27b
 ```
+
+如果你想换成其他模型，例如 `qwen2.5:7b`，需要先在 Ollama 中下载：
+
+```bash
+ollama pull qwen2.5:7b
+```
+
+然后在 `backend/config.py` 中修改：
+
+```python
+LLM_MODEL = "qwen2.5:7b"
+```
+
+只要模型已经存在于本机 Ollama 中，并且模型名和 `LLM_MODEL` 完全一致，项目就可以使用该模型运行。
 
 如果你使用 API（OpenAI-compatible）：
 - `LLM_PROVIDER = "openai_compatible"`
