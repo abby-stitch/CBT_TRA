@@ -15,6 +15,7 @@ os.chdir(PROJECT_ROOT)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from backend import app_settings
 from backend.agent import CBTAgent
 from backend import report_service
 
@@ -73,6 +74,7 @@ class GenerateReportResponse(BaseModel):
     metrics: dict[str, Any]
     sessions: list[dict[str, Any]]
     llm_summary: str | None
+    llm_action_items: list[str] = Field(default_factory=list)
     llm_error: str | None
 
 
@@ -81,9 +83,44 @@ class ReportListResponse(BaseModel):
     total: int
 
 
+class DeleteReportResponse(BaseModel):
+    ok: bool
+    report_id: str
+
+
+class AppSettings(BaseModel):
+    llm_provider: str
+    llm_url: str
+    llm_model: str
+    api_key_env_var: str
+    sessions_dir: str
+    reports_dir: str
+    user_context: str = ""
+
+
+class AppSettingsUpdate(BaseModel):
+    llm_provider: str | None = None
+    llm_url: str | None = None
+    llm_model: str | None = None
+    api_key_env_var: str | None = None
+    sessions_dir: str | None = None
+    reports_dir: str | None = None
+    user_context: str | None = None
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/settings", response_model=AppSettings)
+def get_settings() -> AppSettings:
+    return AppSettings(**app_settings.load_settings())
+
+
+@app.put("/api/settings", response_model=AppSettings)
+def update_settings(req: AppSettingsUpdate) -> AppSettings:
+    return AppSettings(**app_settings.save_settings(req.model_dump(exclude_none=True)))
 
 
 @app.post("/api/start", response_model=StartResponse)
@@ -99,10 +136,10 @@ def start() -> StartResponse:
             detail="A session is already in progress. Finish it before starting a new one.",
         )
 
-    agent = CBTAgent(step=1)
+    settings = app_settings.load_settings()
+    agent = CBTAgent(step=1, user_context=settings.get("user_context") or "")
     first_msg = agent.respond(None)
     agent.chat_history.append({"role": "assistant", "content": first_msg})
-    agent.save_session()
     _agents[agent.session_id] = agent
     _active_session_id = agent.session_id
 
@@ -149,6 +186,40 @@ def report_sessions() -> dict[str, Any]:
     return {"items": items, "total": len(items)}
 
 
+@app.get("/api/sessions")
+def list_sessions() -> dict[str, Any]:
+    items: list[dict[str, Any]] = []
+    for session_data in reversed(report_service.load_all_sessions()):
+        if session_data.get("session_status") != "completed":
+            continue
+        record = session_data.get("thought_record") or {}
+        items.append(
+            {
+                "session_id": str(session_data.get("session_id") or ""),
+                "last_updated": session_data.get("last_updated"),
+                "current_step": session_data.get("current_step"),
+                "session_status": session_data.get("session_status"),
+                "date": record.get("date"),
+                "emotion": record.get("emotion") or None,
+                "situation": record.get("situation") or None,
+                "automatic_thought": record.get("automatic_thought") or None,
+                "intensity_before": record.get("intensity_before"),
+                "intensity_after": record.get("intensity_after"),
+                "distortions": list(record.get("distortions") or []),
+                "balanced_thought": record.get("balanced_thought") or None,
+            }
+        )
+    return {"items": items, "total": len(items)}
+
+
+@app.get("/api/sessions/{session_id}")
+def get_session(session_id: str) -> dict[str, Any]:
+    for session_data in report_service.load_all_sessions():
+        if str(session_data.get("session_id") or "") == session_id and session_data.get("session_status") == "completed":
+            return session_data
+    raise HTTPException(status_code=404, detail="Session not found.")
+
+
 @app.post("/api/reports/generate", response_model=GenerateReportResponse)
 def generate_report(req: GenerateReportRequest) -> GenerateReportResponse:
     mode = (req.mode or "recent").strip().lower()
@@ -158,11 +229,13 @@ def generate_report(req: GenerateReportRequest) -> GenerateReportResponse:
         raise HTTPException(status_code=400, detail="session_ids is required for this mode")
 
     try:
+        settings = app_settings.load_settings()
         report = report_service.generate_report(
             mode=mode,
             limit=req.limit,
             session_ids=req.session_ids,
             include_llm_summary=req.include_llm_summary,
+            user_context=settings.get("user_context") or "",
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -175,6 +248,7 @@ def generate_report(req: GenerateReportRequest) -> GenerateReportResponse:
         metrics=report["metrics"],
         sessions=report["sessions"],
         llm_summary=report.get("llm_summary"),
+        llm_action_items=list(report.get("llm_action_items") or []),
         llm_error=report.get("llm_error"),
     )
 
@@ -185,10 +259,28 @@ def list_reports() -> ReportListResponse:
     return ReportListResponse(items=items, total=len(items))
 
 
+@app.post("/api/reports/save")
+def save_report(report: dict[str, Any]) -> dict[str, Any]:
+    if not report.get("sessions"):
+        raise HTTPException(status_code=400, detail="Report data is missing sessions.")
+    try:
+        report_service.save_report(report)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail="Invalid report id.") from exc
+    return report
+
+
 @app.get("/api/reports/session/{session_id}")
 def single_session_report(session_id: str) -> dict[str, Any]:
     try:
-        return report_service.generate_report(mode="single", session_ids=[session_id], persist=False)
+        settings = app_settings.load_settings()
+        return report_service.generate_report(
+            mode="single",
+            session_ids=[session_id],
+            include_llm_summary=True,
+            user_context=settings.get("user_context") or "",
+            persist=False,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail="Session not found or not completed.") from exc
 
@@ -210,10 +302,13 @@ def multi_session_report(
             raise HTTPException(status_code=400, detail="session_ids is required when mode=custom")
 
     try:
+        settings = app_settings.load_settings()
         return report_service.generate_report(
             mode=normalized_mode,
             limit=limit,
             session_ids=selected_ids,
+            include_llm_summary=True,
+            user_context=settings.get("user_context") or "",
             persist=False,
         )
     except ValueError as exc:
@@ -226,3 +321,12 @@ def get_report(report_id: str) -> dict[str, Any]:
         return report_service.load_report(report_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Report not found.") from exc
+
+
+@app.delete("/api/reports/{report_id}", response_model=DeleteReportResponse)
+def delete_report(report_id: str) -> DeleteReportResponse:
+    try:
+        report_service.delete_report(report_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Report not found.") from exc
+    return DeleteReportResponse(ok=True, report_id=report_id)

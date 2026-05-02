@@ -8,6 +8,7 @@ from statistics import mean
 from typing import Any
 
 from backend import config
+from backend import llm_io
 
 
 def _reports_dir() -> Path:
@@ -15,6 +16,13 @@ def _reports_dir() -> Path:
     p = Path(reports_dir)
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def _safe_report_path(report_id: str) -> Path:
+    clean_id = str(report_id or "").strip()
+    if not clean_id or "/" in clean_id or "\\" in clean_id or clean_id.startswith("."):
+        raise FileNotFoundError(report_id)
+    return _reports_dir() / f"report_{clean_id}.json"
 
 
 def _sessions_dir() -> Path:
@@ -264,12 +272,128 @@ def _summary_metrics(sessions: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _report_summary_payload(report_type: str, items: list[dict[str, Any]], metrics: dict[str, Any]) -> dict[str, Any]:
+    if report_type == "single_session":
+        item = items[0] if items else {}
+        return {
+            "report_type": report_type,
+            "session": {
+                "date": item.get("date"),
+                "situation": item.get("situation"),
+                "emotion": item.get("emotion"),
+                "intensity_before": item.get("intensity_before"),
+                "intensity_after": item.get("intensity_after"),
+                "intensity_delta": item.get("intensity_delta"),
+                "automatic_thought": item.get("automatic_thought"),
+                "evidence_for": item.get("evidence_for"),
+                "evidence_against": item.get("evidence_against"),
+                "distortions": item.get("distortions"),
+                "balanced_thought": item.get("balanced_thought"),
+                "summary": item.get("summary"),
+            },
+        }
+
+    return {
+        "report_type": report_type,
+        "metrics": {
+            "total_sessions_in_scope": metrics.get("total_sessions_in_scope"),
+            "improved_sessions": metrics.get("improved_sessions"),
+            "average_intensity_delta": metrics.get("average_intensity_delta"),
+            "top_emotions": metrics.get("top_emotions"),
+            "top_distortions": metrics.get("top_distortions"),
+            "distortion_trends": metrics.get("distortion_trends"),
+        },
+        "sessions": [
+            {
+                "date": item.get("date"),
+                "emotion": item.get("emotion"),
+                "intensity_before": item.get("intensity_before"),
+                "intensity_after": item.get("intensity_after"),
+                "intensity_delta": item.get("intensity_delta"),
+                "distortions": item.get("distortions"),
+                "balanced_thought": item.get("balanced_thought"),
+            }
+            for item in items
+        ],
+    }
+
+
+def _generate_llm_report_summary(
+    *,
+    report_type: str,
+    items: list[dict[str, Any]],
+    metrics: dict[str, Any],
+    user_context: str = "",
+) -> tuple[str | None, list[str], str | None]:
+    payload = _report_summary_payload(report_type, items, metrics)
+    context = user_context.strip()
+    profile_block = context if context else "No user profile was provided."
+    prompt = f"""
+You are writing the synthesis section for a CBT Thought Record report.
+This is a self-reflection support tool, not therapy, diagnosis, or medical advice.
+
+OPTIONAL USER PROFILE:
+{profile_block}
+
+REPORT DATA:
+{json.dumps(payload, ensure_ascii=False, indent=2)}
+
+RULES:
+- Use the profile only as optional background.
+- Do not diagnose, label personality, or make claims about the user's mental health.
+- Do not infer fixed traits such as "you are an anxious person" or "you have a disorder."
+- Prefer careful wording such as "in these records, a pattern appears..." or "a useful next practice focus may be..."
+- If profile and session data conflict, trust the session data.
+- Make the synthesis the most important part of the report: interpret the record, not just restate fields.
+- For a single-session report, mention the main emotional shift, the automatic thought pattern, and one grounded next reflection focus.
+- For a multi-session report, mention recurring stressors, emotions, distortions, or balanced-thought progress only when supported by the data.
+- Action items must be gentle CBT practice suggestions based only on the report data. Do not give medical advice.
+- Output ONLY valid JSON, no markdown:
+{{"synthesis":"one warm paragraph, 90-150 words","action_items":["short practical item 1","short practical item 2","short practical item 3"]}}
+"""
+    try:
+        raw = llm_io.call_llm(
+            provider=config.LLM_PROVIDER,
+            url=config.LLM_URL,
+            model=config.LLM_MODEL,
+            prompt=prompt,
+            temperature=0.4,
+            api_key_env_var=config.API_KEY_ENV_VAR,
+            timeout_s=90.0,
+        ).strip()
+    except Exception as exc:
+        return None, [], str(exc)
+
+    if not raw:
+        return None, [], "LLM returned an empty summary."
+    if raw.startswith("Error:"):
+        return None, [], raw
+
+    try:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start >= 0 and end >= start:
+            data = json.loads(raw[start : end + 1])
+            synthesis = data.get("synthesis")
+            action_items = data.get("action_items") or []
+            if isinstance(action_items, str):
+                action_items = [action_items]
+            clean_items = [str(item).strip() for item in action_items if str(item).strip()][:3]
+            if isinstance(synthesis, str) and synthesis.strip():
+                return synthesis.strip(), clean_items, None
+    except Exception:
+        pass
+
+    return raw, [], None
+
+
 def generate_report(
     *,
     mode: str = "recent",
     limit: int = 5,
     session_ids: list[str] | None = None,
     include_llm_summary: bool = False,
+    user_context: str = "",
     persist: bool = True,
 ) -> dict[str, Any]:
     sessions = select_sessions(mode=mode, limit=limit, session_ids=session_ids)
@@ -309,9 +433,21 @@ def generate_report(
         "metrics": metrics,
         "sessions": items,
         "llm_summary": None,
+        "llm_action_items": [],
         "llm_error": None,
         "include_llm_summary": include_llm_summary,
+        "profile_context_used": bool(user_context.strip()),
     }
+    if include_llm_summary:
+        summary, action_items, error = _generate_llm_report_summary(
+            report_type=report_type,
+            items=items,
+            metrics=metrics,
+            user_context=user_context,
+        )
+        report_data["llm_summary"] = summary
+        report_data["llm_action_items"] = action_items
+        report_data["llm_error"] = error
     if persist:
         save_report(report_data)
     return report_data
@@ -319,7 +455,8 @@ def generate_report(
 
 def save_report(report_data: dict[str, Any]) -> Path:
     report_id = str(report_data.get("report_id") or datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
-    path = _reports_dir() / f"report_{report_id}.json"
+    report_data["report_id"] = report_id
+    path = _safe_report_path(report_id)
     path.write_text(json.dumps(report_data, indent=2, ensure_ascii=False), encoding="utf-8")
     return path
 
@@ -346,7 +483,14 @@ def list_reports() -> list[dict[str, Any]]:
 
 
 def load_report(report_id: str) -> dict[str, Any]:
-    path = _reports_dir() / f"report_{report_id}.json"
+    path = _safe_report_path(report_id)
     if not path.exists():
         raise FileNotFoundError(report_id)
     return _load_json(path)
+
+
+def delete_report(report_id: str) -> None:
+    path = _safe_report_path(report_id)
+    if not path.exists():
+        raise FileNotFoundError(report_id)
+    path.unlink()

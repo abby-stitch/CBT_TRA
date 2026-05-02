@@ -76,6 +76,84 @@ LLM_MODEL = "qwen2.5:7b"
 - `LLM_MODEL` 设置为你要使用的模型名
 - 并在环境变量里设置 `API_KEY_ENV_VAR` 指向的 key（默认读取 `OPENAI_API_KEY`）
 
+### 4) API Key 环境变量怎么设置
+
+项目不会把真实 API key 写进代码或 `app_settings.json`。代码只保存环境变量名，例如 `OPENAI_API_KEY`，真正的 key 需要你在启动后端前放进终端环境。
+
+macOS / Linux / zsh 临时设置：
+
+```bash
+export OPENAI_API_KEY="你的真实 key"
+uv run uvicorn backend.api_app:app --reload --port 8000
+```
+
+如果想长期生效，可以写入 `~/.zshrc`：
+
+```bash
+echo 'export OPENAI_API_KEY="你的真实 key"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+Windows PowerShell 临时设置：
+
+```powershell
+$env:OPENAI_API_KEY="你的真实 key"
+uv run uvicorn backend.api_app:app --reload --port 8000
+```
+
+在前端右上角 settings 里：
+
+- `Provider` 选 `openai_compatible`
+- `API / Ollama URL` 填 API base URL，例如 `https://api.openai.com/v1`
+- `Model` 填模型名
+- `API key env var` 填 `OPENAI_API_KEY`
+
+如果你用的是其他兼容服务，也可以把环境变量名改成别的，例如 `MY_API_KEY`。只要 settings 里的 `API key env var` 和终端里设置的环境变量名一致即可。
+
+### 5) 路径为什么可以换电脑
+
+前端 settings 里默认显示的是相对路径：
+
+```text
+sessions
+reports
+```
+
+后端会在运行时把相对路径解析到当前项目根目录。例如在你的电脑上会变成：
+
+```text
+/Users/abbyliang/2025/hku/sem2/projects/tra_test/sessions
+/Users/abbyliang/2025/hku/sem2/projects/tra_test/reports
+```
+
+在别人的电脑上会自动变成对方项目所在目录下的 `sessions/` 和 `reports/`。这部分逻辑在 `backend/app_settings.py` 的 `_resolve_data_dir()`。
+
+只有当你手动填写绝对路径时，才会固定到某台电脑的具体路径。
+
+### 6) 去哪里看这些功能写在代码哪里
+
+前端：
+
+- 页面和路由：`frontend/src/App.tsx`
+- 前端调用后端 API：`frontend/src/api.ts`
+- 前端数据类型：`frontend/src/types.ts`
+- 页面样式：`frontend/src/styles.css`
+
+后端：
+
+- FastAPI API：`backend/api_app.py`
+- 模型、路径、个人背景设置读写：`backend/app_settings.py`
+- 默认配置：`backend/config.py`
+- CBT 对话流程：`backend/agent.py`
+- CBT prompt / Beck-style thought-record 步骤：`backend/prompts.py`
+- 报告生成：`backend/report_service.py`
+- session 文件写入：`backend/storage.py`
+
+右上角按钮：
+
+- settings 图标：修改模型、API URL、保存路径
+- 人像图标：填写个人 CBT 背景信息，作为新 session 的可选上下文
+
 ---
 
 ## Terminal 版本怎么用
@@ -114,9 +192,10 @@ uv run python -m backend.main
 ## Web App 版本怎么用
 
 Web App 的目标是把 Terminal 里的“输入/输出循环”改成“浏览器 UI + HTTP 接口”：
+- 首页：先提示用户选择一个最近情绪明显变化的具体时刻，再开始 Thought Record
 - 浏览器输入框：相当于 Terminal 的 `input("You: ")`
 - 后端接口 `/api/message`：相当于 Terminal 每一轮循环的处理逻辑
-- 右侧 thought_record 面板：实时显示当前 JSON 表单
+- React 前端当前以聊天引导为主；每轮仍会在后端抽取并保存 `thought_record`，完成后可进入报告页查看结构化结果
 
 ### 启动方式（FastAPI + Uvicorn）
 
@@ -164,11 +243,12 @@ React 前端目前接管这些页面：
 
 ### 页面怎么用
 
-1. 点击 `New Session` 开始会话（会创建一个新的 `CBTAgent`）
-2. 在输入框输入内容并发送
-3. 右侧 `thought_record` 会实时刷新
-4. 当 Step 全部完成后，会出现 `View Thought Record` 按钮
-5. 点击 `View Thought Record` 会跳转到 `/record/<session_id>`，以表格形式展示最终记录
+1. 在首页选择一个最近让情绪明显变化的具体时刻；如果事情持续了一段时间，先聚焦情绪最强烈的片刻
+2. 点击 `Start Thought Record` 开始会话（会创建一个新的 `CBTAgent`）
+3. 在输入框像聊天一样输入内容并发送；前端会显示当前 session、step、聊天记录和基础记录焦点
+4. 每轮发送后，后端会抽取可填写的信息、更新 `thought_record`、判断当前 step 是否完成，并保存 session JSON
+5. 当 Step 全部完成后，会出现 `View Thought Record` 按钮
+6. 点击 `View Thought Record` 会跳转到 `/reports/session/<session_id>`，查看该 session 的结构化报告内容
 
 ### 网页版的关键接口（便于调试）
 

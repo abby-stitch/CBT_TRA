@@ -7,7 +7,6 @@ print(f"=== CBT Session Started (ID: {agent.session_id}) ===")
 first_msg = agent.respond(None)
 print(f"Agent: {first_msg}")
 agent.chat_history.append({"role": "assistant", "content": first_msg})
-agent.save_session()
 step = 0
 while agent.current_step <= 7:
     step += 1
@@ -26,4 +25,4 @@ while agent.current_step <= 7:
     if result["session_completed"]:
         break
 
-print(f"\n=== Session Finished. Data saved in sessions/session_{agent.session_id}.json ===")
+print(f"\n=== Session Finished. Data is saved after the first user turn in sessions/session_{agent.session_id}.json ===")

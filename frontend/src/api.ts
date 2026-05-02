@@ -1,4 +1,14 @@
-import type { MessageResponse, Report, ReportSessionsResponse, StartResponse } from "./types";
+import type {
+  AppSettings,
+  DeleteReportResponse,
+  MessageResponse,
+  Report,
+  ReportSessionsResponse,
+  SavedReportsResponse,
+  SessionArchiveResponse,
+  SessionDetail,
+  StartResponse
+} from "./types";
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -42,6 +52,14 @@ export function listReportSessions(): Promise<ReportSessionsResponse> {
   return requestJson<ReportSessionsResponse>("/api/report-sessions");
 }
 
+export function listSessions(): Promise<SessionArchiveResponse> {
+  return requestJson<SessionArchiveResponse>("/api/sessions");
+}
+
+export function getSession(sessionId: string): Promise<SessionDetail> {
+  return requestJson<SessionDetail>(`/api/sessions/${encodeURIComponent(sessionId)}`);
+}
+
 export function getSingleSessionReport(sessionId: string): Promise<Report> {
   return requestJson<Report>(`/api/reports/session/${encodeURIComponent(sessionId)}`);
 }
@@ -56,4 +74,32 @@ export function getMultiSessionReport(mode: string, limit: number, sessionIds: s
 
 export function getSavedReport(reportId: string): Promise<Report> {
   return requestJson<Report>(`/api/reports/${encodeURIComponent(reportId)}`);
+}
+
+export function listSavedReports(): Promise<SavedReportsResponse> {
+  return requestJson<SavedReportsResponse>("/api/reports");
+}
+
+export function saveGeneratedReport(report: Report): Promise<Report> {
+  return requestJson<Report>("/api/reports/save", {
+    method: "POST",
+    body: JSON.stringify(report)
+  });
+}
+
+export function deleteSavedReport(reportId: string): Promise<DeleteReportResponse> {
+  return requestJson<DeleteReportResponse>(`/api/reports/${encodeURIComponent(reportId)}`, {
+    method: "DELETE"
+  });
+}
+
+export function getSettings(): Promise<AppSettings> {
+  return requestJson<AppSettings>("/api/settings");
+}
+
+export function updateSettings(settings: AppSettings): Promise<AppSettings> {
+  return requestJson<AppSettings>("/api/settings", {
+    method: "PUT",
+    body: JSON.stringify(settings)
+  });
 }

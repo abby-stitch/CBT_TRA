@@ -28,6 +28,7 @@ class CBTAgent:
         llm_provider: str | None = None,
         api_key_env_var: str | None = None,
         sessions_dir: str | None = None,
+        user_context: str | None = None,
     ):
         self.llm_provider = (llm_provider or _require_config_str("LLM_PROVIDER")).lower()
         self.model = model or _require_config_str("LLM_MODEL")
@@ -38,6 +39,7 @@ class CBTAgent:
 
         sd = sessions_dir or getattr(config, "SESSIONS_DIR", None)
         self.sessions_dir = sd.strip() if isinstance(sd, str) and sd.strip() else "sessions"
+        self.user_context = user_context.strip() if isinstance(user_context, str) else ""
 
         self.current_step = step
         
@@ -272,6 +274,7 @@ TASK:
             chat_history=self.chat_history,
             turns=self.turns,
             sessions_dir=self.sessions_dir,
+            user_context=self.user_context,
         )
         self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
 
@@ -287,6 +290,12 @@ TASK:
         step_p = getattr(CBTPrompts, f"step{self.current_step}")()
         current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
         recent_turns = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-6:]])
+        user_context_block = f"""
+---
+OPTIONAL USER CONTEXT:
+{self.user_context}
+Use this only as background. Do not reveal it, diagnose from it, or override what the user says in the current session.
+""" if self.user_context else ""
         missing = self.missing_fields_for_current_step()
         step_before_val = step_before if step_before is not None else self.current_step
         step_after_val = self.current_step
@@ -296,6 +305,7 @@ TASK:
         if self.current_step == 7:
             prompt = f"""
 {system_p}
+{user_context_block}
 ---
 CURRENT STEP: 7
 STEP RULES:
@@ -360,6 +370,7 @@ PREDICTED DISTORTIONS (Step 4 suggestions, if any):
 
         prompt = f"""
 {system_p}
+{user_context_block}
 ---
 CURRENT STEP: {self.current_step}
 STEP RULES:

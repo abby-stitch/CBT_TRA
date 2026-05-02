@@ -42,6 +42,47 @@ export type ReportSessionsResponse = {
   total: number;
 };
 
+export type SavedReportSummary = {
+  report_id?: string;
+  generated_at?: string;
+  scope?: ReportScope;
+  sessions_count?: number;
+  has_llm_summary?: boolean;
+};
+
+export type SavedReportsResponse = {
+  items: SavedReportSummary[];
+  total: number;
+};
+
+export type DeleteReportResponse = {
+  ok: boolean;
+  report_id: string;
+};
+
+export type SessionArchiveItem = ReportSession & {
+  last_updated?: string;
+  current_step?: number;
+  session_status?: string;
+  situation?: string | null;
+  automatic_thought?: string | null;
+};
+
+export type SessionArchiveResponse = {
+  items: SessionArchiveItem[];
+  total: number;
+};
+
+export type SessionDetail = {
+  session_id: string;
+  last_updated?: string;
+  current_step?: number;
+  session_status?: string;
+  thought_record?: ReportItem;
+  chat_history?: Array<{ role?: string; content?: string }>;
+  turns?: Array<Record<string, unknown>>;
+};
+
 export type ReportScope = {
   mode?: string;
   requested_limit?: number | null;
@@ -65,6 +106,8 @@ export type ReportMetrics = {
   intensity_delta?: number | null;
   total_sessions_in_scope?: number;
   improved_sessions?: number;
+  average_intensity_before?: number | null;
+  average_intensity_after?: number | null;
   average_intensity_delta?: number | null;
   top_distortions?: DistributionItem[];
   top_emotions?: DistributionItem[];
@@ -86,5 +129,17 @@ export type Report = {
   metrics: ReportMetrics;
   sessions: ReportItem[];
   llm_summary: string | null;
+  llm_action_items?: string[];
   llm_error: string | null;
+  profile_context_used?: boolean;
+};
+
+export type AppSettings = {
+  llm_provider: string;
+  llm_url: string;
+  llm_model: string;
+  api_key_env_var: string;
+  sessions_dir: string;
+  reports_dir: string;
+  user_context: string;
 };

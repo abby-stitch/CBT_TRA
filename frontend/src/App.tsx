@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getMultiSessionReport, getSavedReport, getSingleSessionReport, listReportSessions, sendMessage, startSession } from "./api";
-import type { ChatMessage, Report, ReportItem, ReportSession } from "./types";
+import {
+  deleteSavedReport,
+  getMultiSessionReport,
+  getSavedReport,
+  getSettings,
+  getSingleSessionReport,
+  getSession,
+  listSessions,
+  listSavedReports,
+  listReportSessions,
+  saveGeneratedReport,
+  sendMessage,
+  startSession,
+  updateSettings
+} from "./api";
+import type { AppSettings, ChatMessage, Report, ReportItem, ReportSession, SavedReportSummary, SessionArchiveItem, SessionDetail } from "./types";
 
 function makeMessage(role: ChatMessage["role"], text: string): ChatMessage {
   return {
@@ -49,12 +63,55 @@ function buildSummary(item: ReportSession) {
   if (distortions.length) {
     parts.push(`Distortions: ${distortions.join(", ")}`);
   }
-  return parts.join(" • ") || "Open the full report to review this session.";
+  return parts.join(" • ") || "Open the thought record to review this session.";
 }
 
-function localReportUrl(url?: string) {
-  if (!url) return "/reports";
-  return url.startsWith("/reports") ? url : `/reports/session/${encodeURIComponent(url)}`;
+function savedReportTitle(item: SavedReportSummary) {
+  const scope = item.scope || {};
+  const type = scope.report_type === "single_session" ? "Single Session Report" : "Progress Report";
+  const count = item.sessions_count ?? scope.session_ids?.length ?? 0;
+  return count ? `${type} · ${count} session${count === 1 ? "" : "s"}` : type;
+}
+
+function savedReportSummary(item: SavedReportSummary) {
+  const scope = item.scope || {};
+  if (scope.report_type === "single_session") {
+    const sessionDate = scope.date_range?.start || scope.date_range?.end;
+    return sessionDate ? `Session date: ${sessionDate}` : "Session date unavailable";
+  }
+  const mode = scope.mode ? `Mode: ${scope.mode}` : "Saved report";
+  const range = scope.date_range?.start && scope.date_range?.end ? `${scope.date_range.start} to ${scope.date_range.end}` : "Date range unavailable";
+  return `${mode} · ${range}`;
+}
+
+function generatedReportText(report: Report) {
+  return report.llm_summary || (report.llm_error ? `Generated summary unavailable: ${report.llm_error}` : "No generated summary is available for this report.");
+}
+
+function defaultActionItems(report: Report) {
+  const first = report.sessions[0] || {};
+  if (report.scope.report_type === "single_session") {
+    const thought = first.automatic_thought || "the original automatic thought";
+    return [
+      `When this theme returns, briefly name the thought as "${thought}" before responding to it.`,
+      "Revisit the evidence against the thought and add one concrete fact if a new example appears.",
+      "Practice writing one balanced thought that is realistic rather than simply positive."
+    ];
+  }
+  return [
+    "Review the most common distortion label before the next thought record session.",
+    "Notice whether similar situations keep appearing across recent records.",
+    "Keep a short list of balanced thoughts that felt believable enough to reuse."
+  ];
+}
+
+function reportActionItems(report: Report) {
+  const generated = report.llm_action_items || [];
+  return generated.length ? generated.slice(0, 3) : defaultActionItems(report);
+}
+
+function sessionDetailUrl(sessionId?: string | null) {
+  return sessionId ? `/sessions?session_id=${encodeURIComponent(sessionId)}` : "/sessions";
 }
 
 function newestFirst<T extends { date?: string; session_id?: string }>(items: T[]) {
@@ -66,6 +123,9 @@ function newestFirst<T extends { date?: string; session_id?: string }>(items: T[
 }
 
 function AppFrame({ children, active = "welcome" }: { children: React.ReactNode; active?: "welcome" | "session" | "reports" }) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   return (
     <div className="page-shell">
       <div className="ambient-right"></div>
@@ -74,13 +134,13 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
       <nav className="nav">
         <div className="nav-inner">
           <a className="brand" href="/">
-            The Quiet Sanctuary
+            CBT Thought Record
           </a>
           <div className="nav-links">
             <a className={active === "welcome" ? "active" : ""} href="/">
-              Welcome
+              Home
             </a>
-            <a className={active === "session" ? "active" : ""} href="/">
+            <a className={active === "session" ? "active" : ""} href="/sessions">
               Session
             </a>
             <a className={active === "reports" ? "active" : ""} href="/reports">
@@ -88,10 +148,10 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
             </a>
           </div>
           <div className="nav-actions">
-            <button className="icon-btn" type="button" aria-label="Settings">
+            <button className="icon-btn" type="button" aria-label="Settings" onClick={() => setIsSettingsOpen(true)}>
               <span className="material-symbols-outlined">settings</span>
             </button>
-            <button className="icon-btn" type="button" aria-label="Account">
+            <button className="icon-btn" type="button" aria-label="Personal context" onClick={() => setIsProfileOpen(true)}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>
@@ -99,6 +159,169 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
       </nav>
 
       <main className="wrap">{children}</main>
+      {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
+      {isProfileOpen && <ProfileDialog onClose={() => setIsProfileOpen(false)} />}
+    </div>
+  );
+}
+
+function useSettingsForm() {
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [status, setStatus] = useState("Loading...");
+
+  useEffect(() => {
+    getSettings()
+      .then((data) => {
+        setSettings(data);
+        setStatus("");
+      })
+      .catch((err) => setStatus(err instanceof Error ? err.message : "Could not load settings."));
+  }, []);
+
+  function setField(key: keyof AppSettings, value: string) {
+    setSettings((current) => (current ? { ...current, [key]: value } : current));
+  }
+
+  async function saveSettings(nextSettings = settings) {
+    if (!nextSettings) return;
+    setStatus("Saving...");
+    try {
+      const next = await updateSettings(nextSettings);
+      setSettings(next);
+      setStatus("Saved. New sessions will use these settings.");
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not save settings.");
+    }
+  }
+
+  return { settings, setField, saveSettings, status };
+}
+
+function SettingsDialog({ onClose }: { onClose: () => void }) {
+  const { settings, setField, saveSettings, status } = useSettingsForm();
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await saveSettings();
+  }
+
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Project settings">
+      <form className="settings-modal" onSubmit={handleSave}>
+        <div className="settings-head">
+          <div>
+            <div className="eyebrow">Local Project Settings</div>
+            <h2>Model and storage</h2>
+          </div>
+          <button className="icon-btn" type="button" aria-label="Close settings" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {!settings ? (
+          <p className="muted">{status}</p>
+        ) : (
+          <>
+            <div className="settings-grid">
+              <label>
+                Provider
+                <select value={settings.llm_provider} onChange={(event) => setField("llm_provider", event.target.value)}>
+                  <option value="ollama">ollama</option>
+                  <option value="openai_compatible">openai_compatible</option>
+                  <option value="api">api</option>
+                </select>
+              </label>
+              <label>
+                Model
+                <input value={settings.llm_model} onChange={(event) => setField("llm_model", event.target.value)} />
+              </label>
+              <label className="settings-wide">
+                API / Ollama URL
+                <input value={settings.llm_url} onChange={(event) => setField("llm_url", event.target.value)} />
+              </label>
+              <label>
+                API key env var
+                <input value={settings.api_key_env_var} onChange={(event) => setField("api_key_env_var", event.target.value)} />
+              </label>
+              <label className="settings-wide">
+                Sessions path
+                <input value={settings.sessions_dir} onChange={(event) => setField("sessions_dir", event.target.value)} />
+              </label>
+              <label className="settings-wide">
+                Reports path
+                <input value={settings.reports_dir} onChange={(event) => setField("reports_dir", event.target.value)} />
+              </label>
+            </div>
+
+            <p className="settings-note">
+              Relative paths such as "sessions" and "reports" are resolved from the project root, so they work on another computer too.
+              API keys are not stored here; set the real key in your terminal environment.
+            </p>
+            {status && <p className="settings-status">{status}</p>}
+            <div className="settings-actions">
+              <button className="btn-secondary" type="button" onClick={onClose}>
+                Cancel
+              </button>
+              <button className="btn-primary" type="submit">
+                Save Settings
+              </button>
+            </div>
+          </>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function ProfileDialog({ onClose }: { onClose: () => void }) {
+  const { settings, setField, saveSettings, status } = useSettingsForm();
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await saveSettings();
+  }
+
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Personal CBT context">
+      <form className="settings-modal profile-modal" onSubmit={handleSave}>
+        <div className="settings-head">
+          <div>
+            <div className="eyebrow">Personal Context</div>
+            <h2>Background for guided CBT sessions</h2>
+          </div>
+          <button className="icon-btn" type="button" aria-label="Close personal context" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {!settings ? (
+          <p className="muted">{status}</p>
+        ) : (
+          <>
+            <label className="context-field">
+              Optional user information
+              <textarea
+                value={settings.user_context}
+                onChange={(event) => setField("user_context", event.target.value)}
+                placeholder="Examples: current role or study context, recurring stressors, recurring automatic thoughts, CBT practice goals, preferred response style, or things to avoid. Keep it brief and factual."
+              />
+            </label>
+            <p className="settings-note">
+              This is used only as background for new sessions and generated report summaries. The assistant should not diagnose from it
+              or override what the user says in the current thought record.
+            </p>
+            {status && <p className="settings-status">{status}</p>}
+            <div className="settings-actions">
+              <button className="btn-secondary" type="button" onClick={onClose}>
+                Cancel
+              </button>
+              <button className="btn-primary" type="submit">
+                Save Context
+              </button>
+            </div>
+          </>
+        )}
+      </form>
     </div>
   );
 }
@@ -197,8 +420,8 @@ function HomePage() {
         <div className="conversation-shell">
           <header className="conversation-header">
             <div className="eyebrow">Current Session</div>
-            <h1 className="conversation-title">Today's Reflection</h1>
-            <p className="conversation-copy">Find your space to breathe and share.</p>
+            <h1 className="conversation-title">Thought Record Session</h1>
+            <p className="conversation-copy">Work through one difficult moment, one step at a time.</p>
             <div className="session-meta-row">
               <div className="session-chip">
                 <span className="material-symbols-outlined small-icon">psychology</span>
@@ -208,7 +431,7 @@ function HomePage() {
               </div>
               <div className="session-chip">
                 <span className="material-symbols-outlined small-icon">receipt_long</span>
-                <span>Thought record saved at the end</span>
+                  <span>Session data is saved locally</span>
               </div>
             </div>
           </header>
@@ -240,11 +463,10 @@ function HomePage() {
 
               <div className="composer-shell">
                 <div className="focus-row">
-                  <span className="focus-label">Focus on:</span>
-                  <span className="focus-chip">Emotion</span>
+                  <span className="focus-label">Start with:</span>
                   <span className="focus-chip">Situation</span>
-                  <span className="focus-chip">Thoughts</span>
-                  <span className="focus-chip">Evidence</span>
+                  <span className="focus-chip">Emotion</span>
+                  <span className="focus-chip">Automatic Thought</span>
                 </div>
                 <form
                   className="composer"
@@ -266,7 +488,7 @@ function HomePage() {
                     <span className="material-symbols-outlined small-icon">send</span>
                   </button>
                 </form>
-                <div className="input-note">This is a safe space for reflection. Take your time.</div>
+                <div className="input-note">This tool supports structured self-reflection and does not replace professional care.</div>
               </div>
             </div>
           </div>
@@ -278,7 +500,7 @@ function HomePage() {
               <div className="completion-copy">
                 Your thought record is ready to review. Open the full record to see the completed worksheet content.
               </div>
-              <a className="btn-primary" href={localReportUrl(recordUrl)}>
+              <a className="btn-primary" href={sessionDetailUrl(sessionId)}>
                 <span className="material-symbols-outlined small-icon">description</span>
                 View Thought Record
               </a>
@@ -292,22 +514,26 @@ function HomePage() {
   return (
     <AppFrame active="welcome">
       <section className="welcome-hero">
-        <div className="eyebrow">Daily Mindfulness</div>
-        <h1 className="hero-title">How are you feeling today?</h1>
+        <div className="eyebrow">CBT Thought Record</div>
+        <h1 className="hero-title">Examine one difficult moment step by step.</h1>
         <p className="hero-copy">
-          A quiet place to work through a thought record, notice patterns in your reflections, and revisit the sessions that helped you
-          slow down and reframe difficult moments.
+          Choose a recent moment when your mood shifted. The guide will help you record what happened, what you felt,
+          what went through your mind, and later develop a more balanced response.
         </p>
         <div className="hero-actions">
           <button className="btn-primary" type="button" disabled={!canStart || isStarting} onClick={handleStartSession}>
             <span className="material-symbols-outlined filled">add_circle</span>
-            {isStarting ? "Starting..." : "Start New Session"}
+            {isStarting ? "Starting..." : "Start Thought Record"}
           </button>
           <a className="btn-secondary" href="/reports">
             <span className="material-symbols-outlined">description</span>
             View Reports
           </a>
         </div>
+        <p className="start-note">
+          If the experience lasted a while, begin with the most intense part: before, during, or after it happened.
+          You do not need to know exactly what to write.
+        </p>
       </section>
 
       <div className="feature-visual">
@@ -316,17 +542,34 @@ function HomePage() {
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoE-aG9-BVEqlSd1HRdS59rsEoLMFwWgHHARpL-WavAz3ei5VMmVtiAwQlUANFoVJaF4wbpi-PVCDDeMdY63C2KuZutk_JtXrxR9tJNy5n_In1uWtiTZ96AlRgrtqtdGzmke43qhCD7roeTjHaRD-zhlkJYlWueRQFXyCaJxu6aOcPJOdiQk4ousKLDIF6KXY8riU_Z57bR6ka9YRwdYw7WkJZPt2djr04v3jY2xiQUX1I0hZqoDpvuA1tZnK1ve5s120c4X1c_-Hu"
         />
         <div className="feature-content">
-          <p className="feature-quote">"The quieter you become, the more you are able to hear."</p>
+          <p className="feature-kicker">During the session</p>
+          <div className="feature-steps" aria-label="Thought record session steps">
+            <div>
+              <span className="material-symbols-outlined">edit_note</span>
+              <p>Describe the moment</p>
+            </div>
+            <div>
+              <span className="material-symbols-outlined">mood</span>
+              <p>Name the emotion</p>
+            </div>
+            <div>
+              <span className="material-symbols-outlined">psychology</span>
+              <p>Notice the thought</p>
+            </div>
+            <div>
+              <span className="material-symbols-outlined">balance</span>
+              <p>Build a balanced response</p>
+            </div>
+          </div>
           <div className="feature-line"></div>
         </div>
       </div>
 
       <section className="records-grid">
         <aside className="records-sidebar">
-          <h2>Recent Records</h2>
+          <h2>Recent Thought Records</h2>
           <p>
-            Your recent completed thought records. Revisit an earlier reflection or move to the full reports area when you want a broader
-            view.
+            Review completed sessions, compare intensity changes, and open reports generated from local session data.
           </p>
           <div className="streak-card">
             <div className="streak-row">
@@ -351,7 +594,7 @@ function HomePage() {
       </section>
 
       <footer className="footer-note">
-        <div className="footer-pill">Your data is private, stored locally, and reviewed only inside your own sanctuary.</div>
+        <div className="footer-pill">Your session and report files are stored locally in the configured project folders.</div>
         <div className="footer-icons">
           <span className="material-symbols-outlined">psychology</span>
           <span className="material-symbols-outlined">self_improvement</span>
@@ -400,7 +643,7 @@ function RecentRecordList({ items, isLoading }: { items: ReportSession[]; isLoad
       {newestFirst(items)
         .slice(0, 3)
         .map((item, idx) => (
-          <a className={`record-card ${idx === 1 ? "is-highlight" : ""}`} href={`/reports/session/${item.session_id}`} key={item.session_id}>
+          <a className={`record-card ${idx === 1 ? "is-highlight" : ""}`} href={sessionDetailUrl(item.session_id)} key={item.session_id}>
             <div className="record-icon">
               <span className="material-symbols-outlined">{idx === 1 ? "spa" : idx === 2 ? "edit_note" : "cloud_queue"}</span>
             </div>
@@ -428,26 +671,197 @@ function RecentRecordList({ items, isLoading }: { items: ReportSession[]; isLoad
   );
 }
 
-function ReportsHomePage() {
-  const [sessions, setSessions] = useState<ReportSession[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [recentLimit, setRecentLimit] = useState(3);
+function SessionsPage() {
+  const pageSize = 10;
+  const initialSessionId = useMemo(() => new URLSearchParams(window.location.search).get("session_id"), []);
+  const [sessions, setSessions] = useState<SessionArchiveItem[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSessionId);
+  const [detail, setDetail] = useState<SessionDetail | null>(null);
+  const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadSessions() {
+    listSessions()
+      .then((data) => {
+        const items = data.items || [];
+        setSessions(items);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load sessions."))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetail(null);
+      return;
+    }
+    setIsLoadingDetail(true);
+    getSession(selectedId)
+      .then((data) => setDetail(data))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load session."))
+      .finally(() => setIsLoadingDetail(false));
+  }, [selectedId]);
+
+  const record = (detail?.thought_record || {}) as ReportItem;
+  const totalPages = Math.max(1, Math.ceil(sessions.length / pageSize));
+  const pageItems = sessions.slice(page * pageSize, page * pageSize + pageSize);
+
+  function returnToList() {
+    setSelectedId(null);
+    setDetail(null);
+  }
+
+  return (
+    <AppFrame active="session">
+      <section className="hero report-hero">
+        <div>
+          <div className="eyebrow">Session Archive</div>
+          <h1 className="title">Past Sessions</h1>
+          <div className="meta-head">Review completed thought record sessions without generating a report.</div>
+        </div>
+        <a className="status-pill" href="/">
+          <span className="material-symbols-outlined small-icon">add_circle</span>
+          <span>New Session</span>
+        </a>
+      </section>
+
+      <div className="session-archive-detail">
+        {!selectedId && (
+          <section className="session-picker-panel">
+            <div className="session-picker-head">
+              <div>
+                <div className="eyebrow">Completed Only</div>
+                <h2>Choose a Thought Record</h2>
+              </div>
+              <span>{sessions.length} sessions</span>
+            </div>
+            <div className="session-picker-list">
+              {error && <div className="empty">{error}</div>}
+              {isLoading && <div className="empty">Loading sessions...</div>}
+              {!isLoading && !sessions.length && <div className="empty">No completed sessions yet.</div>}
+              {pageItems.map((item) => (
+                <button
+                  className="session-picker-row"
+                  type="button"
+                  key={item.session_id}
+                  onClick={() => setSelectedId(item.session_id)}
+                >
+                  <div className="session-picker-main">
+                    <strong>{buildTitle(item)}</strong>
+                    <span>{item.situation || item.automatic_thought || buildSummary(item)}</span>
+                  </div>
+                  <div className="session-picker-meta">
+                    <span>{item.date || item.last_updated || item.session_id}</span>
+                    <em>
+                      {item.intensity_before != null && item.intensity_after != null
+                        ? `${item.intensity_before} -> ${item.intensity_after}`
+                        : "Completed"}
+                    </em>
+                  </div>
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+              ))}
+            </div>
+            {sessions.length > pageSize && (
+              <div className="session-pagination">
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={page === 0}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+
+        {selectedId && (
+          <section className="session-record-view">
+            {error && <div className="empty">{error}</div>}
+            {isLoadingDetail && <div className="empty">Loading session content...</div>}
+            {!isLoadingDetail && !detail && <div className="empty">Select a session to review.</div>}
+            {detail && (
+              <>
+                <div className="session-detail-head">
+                  <div>
+                    <div className="eyebrow">Session {detail.session_id}</div>
+                    <h2>{record.emotion || "Thought Record"}</h2>
+                    <p>{record.date || detail.last_updated || "Date unavailable"}</p>
+                  </div>
+                  <div className="session-detail-actions">
+                    <button className="button secondary" type="button" onClick={returnToList}>
+                      Back to Sessions
+                    </button>
+                    <a className="button primary" href={`/reports/session/${detail.session_id}`}>
+                      Generate Report
+                    </a>
+                  </div>
+                </div>
+
+                <div className="stitch-two-col">
+                  <StitchInsightCard icon="event_note" title="Situation" body={String(record.situation || "No situation recorded.")} />
+                  <StitchInsightCard icon="psychology" title="Automatic Thought" body={String(record.automatic_thought || "No automatic thought recorded.")} tone="soft" />
+                </div>
+                <div className="stitch-two-col">
+                  <StitchListCard icon="checklist" title="Evidence For" items={(record.evidence_for as string[]) || []} />
+                  <StitchListCard icon="fact_check" title="Evidence Against" items={(record.evidence_against as string[]) || []} />
+                </div>
+                <div className="stitch-two-col">
+                  <StitchListCard icon="scatter_plot" title="Distortions" items={(record.distortions as string[]) || []} emptyText="None recorded" />
+                  <StitchInsightCard icon="balance" title="Balanced Thought" body={String(record.balanced_thought || "No balanced thought recorded.")} tone="filled" />
+                </div>
+                <StitchInsightCard icon="notes" title="Session Summary" body={String(record.summary || "No session summary recorded.")} />
+              </>
+            )}
+          </section>
+        )}
+      </div>
+    </AppFrame>
+  );
+}
+
+function ReportsHomePage() {
+  const [sessions, setSessions] = useState<ReportSession[]>([]);
+  const [savedReports, setSavedReports] = useState<SavedReportSummary[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [recentLimit, setRecentLimit] = useState(3);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSaved, setIsLoadingSaved] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [savedError, setSavedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadReportData() {
       try {
-        const data = await listReportSessions();
-        setSessions(data.items || []);
+        const [sessionData, reportData] = await Promise.all([listReportSessions(), listSavedReports()]);
+        setSessions(sessionData.items || []);
+        setSavedReports(reportData.items || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load sessions.");
+        const message = err instanceof Error ? err.message : "Failed to load report data.";
+        setError(message);
+        setSavedError(message);
       } finally {
         setIsLoading(false);
+        setIsLoadingSaved(false);
       }
     }
 
-    void loadSessions();
+    void loadReportData();
   }, []);
 
   function toggleSession(sessionId: string) {
@@ -459,23 +873,23 @@ function ReportsHomePage() {
       <section className="hero report-hero">
         <div>
           <div className="eyebrow">Session Archives</div>
-          <h1 className="title">Independent Report Viewer</h1>
+          <h1 className="title">Thought Record Reports</h1>
           <div className="meta-head">
-            Open a single-session reflection or combine completed sessions into one broader report. Everything here is generated directly
-            from your saved sessions.
+            Generate a single-session report or combine completed thought records into a broader summary. Reports are generated from local
+            session files.
           </div>
         </div>
-        <div className="status-pill">
-          <span className="status-dot"></span>
-          <span>Reports Ready</span>
-        </div>
+        <a className="status-pill" href="/reports/saved">
+          <span className="material-symbols-outlined small-icon">folder</span>
+          <span>Saved Reports</span>
+        </a>
       </section>
 
       <div className="reports-grid">
         <div className="stack">
           <div className="report-panel">
             <div className="section-title">Recent Report</div>
-            <div className="hint">Open a report for the most recent completed sessions.</div>
+            <div className="hint">Generate a report for the most recent completed sessions.</div>
             <div className="controls">
               <input
                 type="number"
@@ -485,14 +899,14 @@ function ReportsHomePage() {
                 onChange={(event) => setRecentLimit(Math.max(1, Math.min(50, Number(event.target.value) || 1)))}
               />
               <a className="button primary" href={`/reports/multi?mode=recent&limit=${recentLimit}`}>
-                Open Recent Report
+                Generate Report
               </a>
             </div>
           </div>
 
           <div className="report-panel">
             <div className="section-title">Custom Report</div>
-            <div className="hint">Select one or more completed sessions, then open a combined report.</div>
+            <div className="hint">Select one or more completed sessions, then generate a combined report.</div>
             <div className="controls">
               <a
                 className={`button primary ${selectedIds.length ? "" : "is-disabled"}`}
@@ -501,10 +915,42 @@ function ReportsHomePage() {
                   if (!selectedIds.length) event.preventDefault();
                 }}
               >
-                {selectedIds.length ? `Open Selected Sessions (${selectedIds.length})` : "Open Selected Sessions"}
+                {selectedIds.length ? `Generate Report (${selectedIds.length})` : "Generate Report"}
               </a>
             </div>
           </div>
+
+          <details className="report-panel saved-report-disclosure">
+            <summary>
+              <span className="summary-title">
+                <span className="material-symbols-outlined disclosure-icon">expand_more</span>
+                <span>Saved Reports</span>
+              </span>
+              <em>{savedReports.length ? `${savedReports.length} saved reports` : "Click to expand"}</em>
+            </summary>
+            <div className="hint">Open a saved report without regenerating the synthesis.</div>
+            {savedError && <div className="empty">{savedError}</div>}
+            {isLoadingSaved && <div className="empty">Loading saved reports...</div>}
+            {!isLoadingSaved && !savedReports.length && <div className="empty">No saved reports yet.</div>}
+            <div className="saved-report-list">
+              {savedReports.slice(0, 6).map((item) => (
+                <a className="saved-report-row" href={`/reports/${item.report_id}`} key={item.report_id}>
+                  <div>
+                    <strong>{savedReportTitle(item)}</strong>
+                    <span>{savedReportSummary(item)}</span>
+                  </div>
+                  <em>{item.generated_at || "Saved"}</em>
+                </a>
+              ))}
+            </div>
+            {!!savedReports.length && (
+              <div className="controls">
+                <a className="button" href="/reports/saved">
+                  View All Saved Reports
+                </a>
+              </div>
+            )}
+          </details>
         </div>
 
         <div className="report-panel">
@@ -532,7 +978,7 @@ function ReportsHomePage() {
                 <div className="meta">Distortions: {(item.distortions || []).join(", ") || "None"}</div>
                 <div className="controls">
                   <a className="button" href={`/reports/session/${item.session_id}`}>
-                    View single report
+                    Generate Report
                   </a>
                 </div>
               </div>
@@ -544,15 +990,93 @@ function ReportsHomePage() {
   );
 }
 
-function ReportPage({ loader }: { loader: () => Promise<Report> }) {
+function SavedReportsPage() {
+  const [reports, setReports] = useState<SavedReportSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState("");
+
+  useEffect(() => {
+    listSavedReports()
+      .then((data) => setReports(data.items || []))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load saved reports."))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  async function handleDeleteReport(reportId?: string) {
+    if (!reportId) return;
+    const confirmed = window.confirm("Delete this saved report? The original session will stay unchanged.");
+    if (!confirmed) return;
+    setDeleteStatus("Deleting report...");
+    try {
+      await deleteSavedReport(reportId);
+      setReports((current) => current.filter((item) => item.report_id !== reportId));
+      setDeleteStatus("Report deleted. The source session was not changed.");
+    } catch (err) {
+      setDeleteStatus(err instanceof Error ? err.message : "Could not delete report.");
+    }
+  }
+
+  return (
+    <AppFrame active="reports">
+      <section className="hero report-hero">
+        <div>
+          <div className="eyebrow">Local Archive</div>
+          <h1 className="title">Saved Reports</h1>
+          <div className="meta-head">Reports listed here are loaded from local JSON files and do not regenerate the LLM synthesis.</div>
+        </div>
+        <a className="status-pill" href="/reports">
+          <span className="material-symbols-outlined small-icon">arrow_back</span>
+          <span>Back to Reports</span>
+        </a>
+      </section>
+
+      <div className="saved-report-page-list">
+        {error && <div className="empty">{error}</div>}
+        {deleteStatus && <div className="empty">{deleteStatus}</div>}
+        {isLoading && <div className="empty">Loading saved reports...</div>}
+        {!isLoading && !reports.length && <div className="empty">No saved reports yet. Generate a report, then use Save Report.</div>}
+        {reports.map((item) => (
+          <div className="saved-report-card" key={item.report_id}>
+            <a className="saved-report-card-main" href={`/reports/${item.report_id}`}>
+              <div className="eyebrow">{item.generated_at || "Saved report"}</div>
+              <h2>{savedReportTitle(item)}</h2>
+              <p>{savedReportSummary(item)}</p>
+            </a>
+            <div className="saved-report-card-actions">
+              <div className="record-tags">
+                <span className="tag tag-emotion">{item.scope?.report_type === "single_session" ? "Single" : "Progress"}</span>
+                <span className="tag tag-metric">{item.has_llm_summary ? "Synthesis saved" : "No synthesis"}</span>
+              </div>
+              <button className="button danger" type="button" onClick={() => handleDeleteReport(item.report_id)}>
+                <span className="material-symbols-outlined small-icon">delete</span>
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </AppFrame>
+  );
+}
+
+function ReportPage({ loader, canSave = true, canDelete = false }: { loader: () => Promise<Report>; canSave?: boolean; canDelete?: boolean }) {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(!canSave);
+  const [savedReportId, setSavedReportId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     loader()
       .then((data) => {
-        if (isMounted) setReport(data);
+        if (isMounted) {
+          setReport(data);
+          setSavedReportId(canSave ? null : data.report_id);
+        }
       })
       .catch((err) => {
         if (isMounted) setError(err instanceof Error ? err.message : "Could not load report.");
@@ -584,68 +1108,452 @@ function ReportPage({ loader }: { loader: () => Promise<Report> }) {
     );
   }
 
-  return report.scope.report_type === "single_session" ? <SingleReportPage report={report} /> : <MultiReportPage report={report} />;
+  async function handleSaveReport() {
+    if (!report || isSaving || isSaved) return;
+    setIsSaving(true);
+    setSaveStatus("Saving report...");
+    try {
+      const saved = await saveGeneratedReport(report);
+      setReport(saved);
+      setIsSaved(true);
+      setSavedReportId(saved.report_id);
+      setSaveStatus(`Saved report ${saved.report_id}. You can reopen it from Saved Reports.`);
+    } catch (err) {
+      setSaveStatus(err instanceof Error ? err.message : "Could not save report.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteReport() {
+    if (!report || isDeleting) return;
+    const confirmed = window.confirm("Delete this saved report? The original session will stay unchanged.");
+    if (!confirmed) return;
+    setIsDeleting(true);
+    setSaveStatus("Deleting saved report...");
+    try {
+      await deleteSavedReport(report.report_id);
+      window.location.assign("/reports/saved");
+    } catch (err) {
+      setSaveStatus(err instanceof Error ? err.message : "Could not delete report.");
+      setIsDeleting(false);
+    }
+  }
+
+  const saveControl = (
+    <ReportSaveBar
+      canSave={canSave}
+      isSaved={isSaved}
+      savedReportId={savedReportId}
+      onSave={canSave ? handleSaveReport : undefined}
+      onDelete={canDelete ? handleDeleteReport : undefined}
+      isSaving={isSaving}
+      isDeleting={isDeleting}
+      status={saveStatus}
+    />
+  );
+
+  return report.scope.report_type === "single_session" ? (
+    <StitchSingleReportPage report={report} saveControl={saveControl} />
+  ) : (
+    <StitchMultiReportPage report={report} saveControl={saveControl} />
+  );
 }
 
-function SingleReportPage({ report }: { report: Report }) {
+function ReportSaveBar({
+  canSave,
+  isSaved,
+  savedReportId,
+  onSave,
+  onDelete,
+  isSaving = false,
+  isDeleting = false,
+  status = ""
+}: {
+  canSave: boolean;
+  isSaved: boolean;
+  savedReportId?: string | null;
+  onSave?: () => void;
+  onDelete?: () => void;
+  isSaving?: boolean;
+  isDeleting?: boolean;
+  status?: string;
+}) {
+  const message = status || (canSave ? "This generated report is not saved yet." : "This report was loaded from saved reports. Deleting it will not change the original session.");
+  return (
+    <div className="report-save-bar">
+      <div>
+        <strong>{canSave ? "Generated Report Preview" : "Saved Report"}</strong>
+        <span>{message}</span>
+      </div>
+      <div className="report-save-actions">
+        <a className="button" href="/reports">
+          <span className="material-symbols-outlined small-icon">arrow_back</span>
+          Back to Reports
+        </a>
+        {isSaved && savedReportId && canSave && (
+          <a className="button" href={`/reports/${savedReportId}`}>
+            <span className="material-symbols-outlined small-icon">folder_open</span>
+            View Saved
+          </a>
+        )}
+        {onSave && (
+          <button className="button primary" type="button" onClick={onSave} disabled={isSaving || isSaved}>
+            <span className="material-symbols-outlined small-icon">{isSaved ? "check_circle" : "save"}</span>
+            {isSaved ? "Saved" : isSaving ? "Saving" : "Save Report"}
+          </button>
+        )}
+        {onDelete && (
+          <button className="button danger" type="button" onClick={onDelete} disabled={isDeleting}>
+            <span className="material-symbols-outlined small-icon">delete</span>
+            {isDeleting ? "Deleting" : "Delete Report"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StitchSingleReportPage({ report, saveControl }: { report: Report; saveControl: React.ReactNode }) {
   const item = report.sessions[0] || {};
+  const before = report.metrics.intensity_before ?? item.intensity_before ?? null;
+  const after = report.metrics.intensity_after ?? item.intensity_after ?? null;
+  const generatedSummary = generatedReportText(report);
+  const actionItems = reportActionItems(report);
+
   return (
     <AppFrame active="reports">
-      <ReportHero eyebrow="Session Archive" title="Single Session Report" subtitle={`Session ${item.session_id || ""} · Generated at ${report.generated_at}`} />
+      <StitchReportHeader
+        eyebrow="Session Archive"
+        title="Session Reflection Report"
+        subtitle={`Session ${item.session_id || ""} · Generated at ${report.generated_at}`}
+        status="Single Session"
+      />
+      {saveControl}
 
-      <div className="report-stats-grid">
-        <Stat label="Date" muted={item.date || ""} />
-        <Stat label="Emotion" value={item.emotion || ""} />
-        <Stat label="Intensity Before" value={String(report.metrics.intensity_before ?? "")} />
-        <Stat label="Intensity After" value={String(report.metrics.intensity_after ?? "")} />
-        <Stat label="Change" muted={changeText(report.metrics.intensity_delta)} />
-      </div>
+      <section className="stitch-bento-grid">
+        <StitchReframePathCard item={item} before={before} after={after} />
+        <div className="stitch-summary-column">
+          <StitchSynthesisCard body={generatedSummary} />
+          <StitchActionItems items={actionItems} />
+        </div>
+      </section>
 
-      <DetailPanel title="Situation">{item.situation || ""}</DetailPanel>
-      <DetailPanel title="Automatic Thought">{item.automatic_thought || ""}</DetailPanel>
-      <ListPanel title="Evidence For" items={item.evidence_for || []} />
-      <ListPanel title="Evidence Against" items={item.evidence_against || []} />
-      <ListPanel title="Distortions" items={item.distortions || []} />
-      <DetailPanel title="Balanced Thought">{item.balanced_thought || ""}</DetailPanel>
-      <DetailPanel title="Summary">{item.summary || ""}</DetailPanel>
+      <section className="stitch-detail-section">
+        <div className="stitch-section-heading">
+          <div>
+            <div className="eyebrow">Thought Record</div>
+            <h2>Session Details</h2>
+          </div>
+        </div>
+        <div className="stitch-two-col">
+          <StitchInsightCard icon="event_note" title="Situation" body={item.situation || "No situation text was recorded."} />
+          <StitchInsightCard icon="psychology" title="Automatic Thought" body={item.automatic_thought || "No automatic thought was recorded."} tone="soft" />
+        </div>
+        <div className="stitch-two-col">
+          <StitchListCard icon="checklist" title="Evidence For" items={item.evidence_for || []} />
+          <StitchListCard icon="fact_check" title="Evidence Against" items={item.evidence_against || []} />
+        </div>
+        <div className="stitch-two-col">
+          <StitchListCard icon="scatter_plot" title="Distortions" items={item.distortions || []} emptyText="None recorded" />
+          <StitchInsightCard icon="balance" title="Balanced Thought" body={item.balanced_thought || "No balanced thought was recorded."} tone="filled" />
+        </div>
+        <StitchInsightCard icon="notes" title="Session Summary" body={item.summary || "No session summary was recorded."} />
+      </section>
     </AppFrame>
   );
 }
 
-function MultiReportPage({ report }: { report: Report }) {
+function StitchMultiReportPage({ report, saveControl }: { report: Report; saveControl: React.ReactNode }) {
   const scope = report.scope || {};
   const metrics = report.metrics || {};
+  const sessionCount = metrics.total_sessions_in_scope ?? report.sessions.length;
+  const generatedSummary = generatedReportText(report);
+  const actionItems = reportActionItems(report);
+
   return (
     <AppFrame active="reports">
-      <ReportHero eyebrow="Session Archives" title="Your Insight Report" subtitle={`Report ID ${report.report_id} · Generated at ${report.generated_at}`} />
+      <StitchReportHeader
+        eyebrow="Session Archives"
+        title="Pattern Insight Report"
+        subtitle={`Report ID ${report.report_id} · Generated at ${report.generated_at}`}
+        status={`${sessionCount} Sessions`}
+      />
+      {saveControl}
 
-      <div className="report-panel">
-        <div className="section-title">Report Scope</div>
-        <div className="muted">Mode: {scope.mode}</div>
-        <div className="muted">Sessions included: {report.sessions.length}</div>
-        <div className="muted">
-          Date range: {scope.date_range?.start} to {scope.date_range?.end}
+      <section className="stitch-bento-grid">
+        <StitchProgressOverviewCard report={report} />
+        <div className="stitch-summary-column">
+          <StitchSynthesisCard body={generatedSummary} />
+          <StitchActionItems items={actionItems} />
         </div>
-      </div>
+      </section>
 
-      <div className="report-stats-grid">
-        <Stat label="Sessions In Scope" value={String(metrics.total_sessions_in_scope ?? report.sessions.length)} />
-        <Stat label="Improved Sessions" value={String(metrics.improved_sessions ?? "")} muted={`out of ${metrics.total_sessions_in_scope ?? report.sessions.length}`} />
-        <Stat label="Average Change" muted={changeText(metrics.average_intensity_delta)} />
-      </div>
-
-      <ListPanel title="Common Distortions" items={(metrics.top_distortions || []).map((item) => `${item.label}: ${item.count}`)} emptyText="None recorded" />
-      <ListPanel title="Common Emotions" items={(metrics.top_emotions || []).map((item) => `${item.label}: ${item.count}`)} emptyText="None recorded" />
-
-      <div className="report-panel">
-        <div className="section-title">Sessions Included</div>
-        <div className="session-list">
-          {newestFirst(report.sessions).map((item) => (
-            <SessionReportCard item={item} key={item.session_id} />
+      <section className="stitch-detail-section">
+        <div className="stitch-section-heading">
+          <div>
+            <div className="eyebrow">Report Data</div>
+            <h2>Patterns and Records</h2>
+          </div>
+          <div className="stitch-scope-box compact">
+            <div className="label">Date Range</div>
+            <p>{scope.date_range?.start || "N/A"} to {scope.date_range?.end || "N/A"}</p>
+          </div>
+        </div>
+        <div className="stitch-two-col">
+          <StitchDistributionCard title="Common Distortions" items={metrics.top_distortions || []} />
+          <StitchDistributionCard title="Common Emotions" items={metrics.top_emotions || []} />
+        </div>
+        <div className="stitch-session-list">
+          {newestFirst(report.sessions).map((item, idx) => (
+            <StitchSessionCard item={item} key={item.session_id} index={idx} />
           ))}
         </div>
-      </div>
+      </section>
     </AppFrame>
+  );
+}
+
+function StitchReportHeader({ eyebrow, title, subtitle, status }: { eyebrow: string; title: string; subtitle: string; status: string }) {
+  return (
+    <section className="stitch-report-hero">
+      <div>
+        <div className="eyebrow">{eyebrow}</div>
+        <h1>{title}</h1>
+        <p>{subtitle}</p>
+      </div>
+      <div className="stitch-status-pill">
+        <span className="material-symbols-outlined small-icon">verified</span>
+        {status}
+      </div>
+    </section>
+  );
+}
+
+function StitchReframePathCard({ item, before, after }: { item: ReportItem; before: number | null; after: number | null }) {
+  const delta = item.intensity_delta ?? (before != null && after != null ? after - before : null);
+  const pathItems = [
+    { icon: "event_note", label: "Situation", body: item.situation || "No situation text was recorded." },
+    { icon: "psychology", label: "Automatic Thought", body: item.automatic_thought || "No automatic thought was recorded." },
+    { icon: "scatter_plot", label: "Distortion Focus", body: (item.distortions || []).join(", ") || "No distortion was recorded." },
+    { icon: "balance", label: "Balanced Thought", body: item.balanced_thought || "No balanced thought was recorded." }
+  ];
+
+  return (
+    <article className="stitch-reframe-card">
+      <div className="stitch-reframe-head">
+        <div>
+          <h3>Thought Reframe Path</h3>
+          <p>The core CBT movement from the original situation and thought toward a more balanced response.</p>
+        </div>
+        <div className="stitch-shift-pill">
+          <span>{before != null && after != null ? `${before} -> ${after}` : "Recorded"}</span>
+          <strong>{changeText(delta)}</strong>
+        </div>
+      </div>
+      <div className="stitch-reframe-path">
+        {pathItems.map((pathItem, idx) => (
+          <div className="stitch-path-item" key={pathItem.label}>
+            <div className="stitch-path-icon">
+              <span className="material-symbols-outlined">{pathItem.icon}</span>
+            </div>
+            <div>
+              <div className="detail-title">{pathItem.label}</div>
+              <p>{pathItem.body}</p>
+            </div>
+            {idx < pathItems.length - 1 && <div className="stitch-path-line"></div>}
+          </div>
+        ))}
+      </div>
+      <div className="stitch-chip-cloud">
+        {[item.emotion || "Reflection", ...(item.distortions || [])].filter(Boolean).map((chip, idx) => (
+          <span key={`${chip}-${idx}`}>{chip}</span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function StitchProgressOverviewCard({ report }: { report: Report }) {
+  const metrics = report.metrics || {};
+  const sessions = newestFirst(report.sessions).slice(0, 6);
+  const sessionCount = metrics.total_sessions_in_scope ?? report.sessions.length;
+
+  return (
+    <article className="stitch-progress-overview-card">
+      <div className="stitch-reframe-head">
+        <div>
+          <h3>Progress Overview</h3>
+          <p>A clearer view of emotional movement and repeated patterns across the selected thought records.</p>
+        </div>
+      </div>
+      <div className="stitch-overview-stats">
+        <div>
+          <span className="label">Sessions</span>
+          <strong>{sessionCount}</strong>
+        </div>
+        <div>
+          <span className="label">Improved</span>
+          <strong>{metrics.improved_sessions ?? 0}</strong>
+        </div>
+        <div>
+          <span className="label">Average Change</span>
+          <strong>{changeText(metrics.average_intensity_delta)}</strong>
+        </div>
+      </div>
+      <div className="stitch-mini-trend">
+        {sessions.map((item) => {
+          const before = item.intensity_before ?? 0;
+          const after = item.intensity_after ?? 0;
+          return (
+            <a className="stitch-trend-row" href={sessionDetailUrl(item.session_id)} key={item.session_id}>
+              <div>
+                <strong>{item.emotion || "Reflection"}</strong>
+                <span>{formatDate(item.date)}</span>
+              </div>
+              <div className="stitch-trend-bars" aria-label={`Intensity ${before} to ${after}`}>
+                <span style={{ width: `${Math.max(3, Math.min(100, before))}%` }}></span>
+                <span style={{ width: `${Math.max(3, Math.min(100, after))}%` }}></span>
+              </div>
+              <em>{before} to {after}</em>
+            </a>
+          );
+        })}
+      </div>
+      <div className="stitch-chip-cloud">
+        {(metrics.top_distortions || []).slice(0, 4).map((item, idx) => (
+          <span key={`${item.label}-${idx}`}>{item.label || "Distortion"} · {item.count ?? 0}</span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function StitchSynthesisCard({ body }: { body: string }) {
+  return (
+    <article className="stitch-synthesis-card">
+      <div className="stitch-card-title-row">
+        <span className="material-symbols-outlined">auto_awesome</span>
+        <h3>Synthesis</h3>
+      </div>
+      <p>{body}</p>
+    </article>
+  );
+}
+
+function StitchActionItems({ items }: { items: string[] }) {
+  return (
+    <article className="stitch-action-card">
+      <h4>Key Practice Items</h4>
+      <ul>
+        {items.map((item, idx) => (
+          <li key={`${item}-${idx}`}>
+            <span className="stitch-check">
+              <span className="material-symbols-outlined">check</span>
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function StitchMetricPanel({ title, metric, detail }: { title: string; metric: string; detail: string }) {
+  return (
+    <div className="stitch-metric-panel">
+      <div className="label">{title}</div>
+      <div className="stitch-metric-value">{metric}</div>
+      <p>{detail}</p>
+    </div>
+  );
+}
+
+function StitchProgress({ label, value }: { label: string; value: number | null }) {
+  const normalized = value == null ? 0 : Math.max(0, Math.min(100, value * 10));
+  return (
+    <div className="stitch-progress">
+      <div className="stitch-progress-row">
+        <span>{label}</span>
+        <strong>{value ?? "N/A"}</strong>
+      </div>
+      <div className="streak-track">
+        <div className="streak-fill" style={{ width: `${normalized}%` }}></div>
+      </div>
+    </div>
+  );
+}
+
+function StitchInsightCard({ icon, title, body, tone = "plain" }: { icon: string; title: string; body: string; tone?: "plain" | "soft" | "filled" }) {
+  return (
+    <article className={`stitch-insight-card ${tone}`}>
+      <div className="stitch-card-icon">
+        <span className="material-symbols-outlined">{icon}</span>
+      </div>
+      <div>
+        <div className="detail-title">{title}</div>
+        <p>{body}</p>
+      </div>
+    </article>
+  );
+}
+
+function StitchListCard({ icon, title, items, emptyText = "None" }: { icon: string; title: string; items: string[]; emptyText?: string }) {
+  return (
+    <article className="stitch-insight-card">
+      <div className="stitch-card-icon">
+        <span className="material-symbols-outlined">{icon}</span>
+      </div>
+      <div>
+        <div className="detail-title">{title}</div>
+        <ul>{items.length ? items.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>) : <li>{emptyText}</li>}</ul>
+      </div>
+    </article>
+  );
+}
+
+function StitchDistributionCard({ title, items }: { title: string; items: { label?: string; count?: number; percentage?: number }[] }) {
+  return (
+    <article className="stitch-distribution-card">
+      <div className="detail-title">{title}</div>
+      <div className="stitch-chip-cloud">
+        {items.length ? (
+          items.map((item, idx) => (
+            <span key={`${title}-${item.label}-${idx}`}>
+              {item.label || "Unknown"} · {item.count ?? 0}
+            </span>
+          ))
+        ) : (
+          <span>None recorded</span>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function StitchSessionCard({ item, index }: { item: ReportItem; index: number }) {
+  return (
+    <a className={`stitch-session-card ${index === 1 ? "is-highlight" : ""}`} href={sessionDetailUrl(item.session_id)}>
+      <div className="record-icon">
+        <span className="material-symbols-outlined">{index === 1 ? "spa" : index === 2 ? "edit_note" : "cloud_queue"}</span>
+      </div>
+      <div className="record-body">
+        <div className="record-top">
+          <span className="record-date">{formatDate(item.date)}</span>
+          <div className="record-tags">
+            <span className="tag tag-emotion">{item.emotion || "Reflection"}</span>
+            <span className="tag tag-metric">
+              {item.intensity_before != null && item.intensity_after != null ? `${item.intensity_before} -> ${item.intensity_after}` : "Completed"}
+            </span>
+          </div>
+        </div>
+        <h3 className="record-title">{buildTitle(item)}</h3>
+        <p className="record-copy">{item.balanced_thought || buildSummary(item)}</p>
+      </div>
+      <div className="record-arrow">
+        <span className="material-symbols-outlined">arrow_forward_ios</span>
+      </div>
+    </a>
   );
 }
 
@@ -695,7 +1603,7 @@ function ListPanel({ title, items, emptyText = "None" }: { title: string; items:
 
 function SessionReportCard({ item }: { item: ReportItem }) {
   return (
-    <a className="session-card" href={`/reports/session/${item.session_id}`}>
+    <a className="session-card" href={sessionDetailUrl(item.session_id)}>
       <div className="session-top">
         <div>
           <div className="session-name">Session {item.session_id}</div>
@@ -718,7 +1626,7 @@ function SessionReportCard({ item }: { item: ReportItem }) {
         <strong>Balanced thought:</strong> {item.balanced_thought}
       </div>
       <div className="link-row">
-        View single report <span className="material-symbols-outlined small-icon">arrow_forward</span>
+        View session <span className="material-symbols-outlined small-icon">arrow_forward</span>
       </div>
     </a>
   );
@@ -728,8 +1636,16 @@ export default function App() {
   const path = window.location.pathname;
   const search = new URLSearchParams(window.location.search);
 
+  if (path === "/sessions") {
+    return <SessionsPage />;
+  }
+
   if (path === "/reports") {
     return <ReportsHomePage />;
+  }
+
+  if (path === "/reports/saved") {
+    return <SavedReportsPage />;
   }
 
   if (path.startsWith("/reports/session/")) {
@@ -749,7 +1665,7 @@ export default function App() {
 
   if (path.startsWith("/reports/")) {
     const reportId = decodeURIComponent(path.replace("/reports/", ""));
-    return <ReportPage loader={() => getSavedReport(reportId)} />;
+    return <ReportPage loader={() => getSavedReport(reportId)} canSave={false} canDelete />;
   }
 
   return <HomePage />;

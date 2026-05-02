@@ -1,0 +1,57 @@
+{
+  "report_id": "20260502_232513_716816",
+  "generated_at": "2026-05-02 23:25:13",
+  "scope": {
+    "mode": "single",
+    "requested_limit": null,
+    "session_ids": [
+      "20260429_215329"
+    ],
+    "report_type": "single_session",
+    "date_range": {
+      "start": "2026-04-29 21:53",
+      "end": "2026-04-29 21:53"
+    }
+  },
+  "metrics": {
+    "intensity_before": 55,
+    "intensity_after": 45,
+    "intensity_delta": -10
+  },
+  "sessions": [
+    {
+      "session_id": "20260429_215329",
+      "date": "2026-04-29 21:53",
+      "situation": "I have three group projects, and one of them is only taking by myself. I feel like my ability is so limited, I can not make some contributaions, and my own project is using ai.",
+      "emotion": "worried",
+      "intensity_before": 55,
+      "automatic_thought": "I have no ability.",
+      "evidence_for": [
+        "I don't know how to do front-end and back-end",
+        "I can not write them by myself",
+        "I didn't learn how to do them",
+        "I just ask ai to realize my idea"
+      ],
+      "evidence_against": [
+        "I can use ai to realize my thoughts, and turn my idea into reality, that can be a kind of ability."
+      ],
+      "distortions": [
+        "Magnification/minimization"
+      ],
+      "balanced_thought": "Because I have so much work to do, using ai is acceptable, and I can also learn something in the process.",
+      "intensity_after": 45,
+      "intensity_delta": -10,
+      "summary": "Okay, let’s wrap up. It sounds like you were feeling worried (55/100) when facing a lot of projects and feeling unsure about your skills, leading to the thought “I have no ability.” We explored how you *were* able to use AI to bring your ideas to life, which is a valuable skill in itself. It seems recognizing this helped you shift your perspective, and your worry has decreased to 45/100. You identified magnification as a thinking pattern at play. Your balanced thought – “Because I have so much work to do, using ai is acceptable, and I can also learn something in the process” – acknowledges the situation and finds a more helpful way to view your abilities. Good work completing this thought record – it takes effort to step back and reflect like this.",
+      "session_report_url": "/reports/session/20260429_215329"
+    }
+  ],
+  "llm_summary": "This thought record demonstrates a shift from feeling worried (decreasing from 55 to 45) when overwhelmed with projects, to a more balanced perspective. The initial automatic thought, “I have no ability,” appears linked to focusing on skill gaps and comparing yourself to a standard of completing all work independently. Identifying this as magnification was a key step. Recognizing the value in utilizing AI – not as a sign of inadequacy, but as a tool for realizing ideas – allowed for a reframing of abilities. This suggests that acknowledging resourceful problem-solving, even when it looks different than expected, can be helpful in managing difficult feelings.",
+  "llm_action_items": [
+    "Notice situations where you feel overwhelmed by tasks.",
+    "When facing a challenge, list *how* you are already responding.",
+    "Practice identifying one positive aspect of your approach, even if it feels imperfect."
+  ],
+  "llm_error": null,
+  "include_llm_summary": true,
+  "profile_context_used": false
+}

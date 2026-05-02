@@ -16,6 +16,7 @@ def save_session(
     chat_history: list[dict[str, Any]],
     turns: list[dict[str, Any]],
     sessions_dir: str = "sessions",
+    user_context: str = "",
 ) -> str:
     os.makedirs(sessions_dir, exist_ok=True)
     session_data = {
@@ -26,6 +27,7 @@ def save_session(
         "safety_state": safety_state,
         "safety_reason": safety_reason,
         "last_safety_warning_turn": last_safety_warning_turn,
+        "user_context": user_context,
         "thought_record": thought_record,
         "chat_history": chat_history,
         "turns": turns,
