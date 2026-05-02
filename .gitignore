@@ -1,8 +1,24 @@
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
 
 frontend/node_modules/
 frontend/dist/
 
 app_settings.json
+.env
+.env.*
+!.env.example
+
+# Local user data and generated artifacts.
+sessions/session_*.json
+reports/report_*.json
+
+# Logs and temporary files.
+*.log
+tmp/
+temp/

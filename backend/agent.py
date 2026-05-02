@@ -275,6 +275,12 @@ TASK:
             turns=self.turns,
             sessions_dir=self.sessions_dir,
             user_context=self.user_context,
+            conversation_llm={
+                "provider": self.llm_provider,
+                "model": self.model,
+                "url": self.url,
+                "api_key_env_var": self.api_key_env_var,
+            },
         )
         self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
 
@@ -549,6 +555,37 @@ TASK:
                 labels.add(m.group(1).strip())
         return labels
 
+    def _distortion_label_map(self) -> dict[str, str]:
+        labels = self._distortion_label_set()
+        out: dict[str, str] = {}
+        aliases = {
+            "catastrophizing": "Catastrophizing (fortune telling)",
+            "fortune telling": "Catastrophizing (fortune telling)",
+            "should statements": "“Should” and “must” statements",
+            "must statements": "“Should” and “must” statements",
+            "should and must statements": "“Should” and “must” statements",
+            "discounting the positive": "Disqualifying or discounting the positive",
+            "disqualifying the positive": "Disqualifying or discounting the positive",
+            "mental filter": "Mental filter (selective abstraction)",
+            "selective abstraction": "Mental filter (selective abstraction)",
+        }
+
+        def key(value: str) -> str:
+            cleaned = value.lower().strip()
+            cleaned = cleaned.replace("“", "").replace("”", "").replace('"', "")
+            cleaned = re.sub(r"\s+", " ", cleaned)
+            return cleaned
+
+        for label in labels:
+            out[key(label)] = label
+            base = re.sub(r"\s*\([^)]*\)", "", label).strip()
+            out[key(base)] = label
+
+        for alias, label in aliases.items():
+            if label in labels:
+                out[key(alias)] = label
+        return out
+
     def _normalize_list_str(self, value) -> list[str]:
         items = value if isinstance(value, list) else [value]
         out: list[str] = []
@@ -602,8 +639,15 @@ TASK:
 
         if field in {"distortions", "predicted_distortion"}:
             items = self._normalize_list_str(value)
-            labels = self._distortion_label_set()
-            filtered = [x for x in items if x in labels]
+            label_map = self._distortion_label_map()
+            filtered: list[str] = []
+            for item in items:
+                key = item.lower().strip()
+                key = key.replace("“", "").replace("”", "").replace('"', "")
+                key = re.sub(r"\s+", " ", key)
+                canonical = label_map.get(key)
+                if canonical and canonical not in filtered:
+                    filtered.append(canonical)
             return filtered if filtered else None
 
         return None

@@ -60,6 +60,13 @@ export type DeleteReportResponse = {
   report_id: string;
 };
 
+export type LlmMetadata = {
+  provider?: string;
+  model?: string;
+  url?: string;
+  api_key_env_var?: string;
+};
+
 export type SessionArchiveItem = ReportSession & {
   last_updated?: string;
   current_step?: number;
@@ -78,6 +85,7 @@ export type SessionDetail = {
   last_updated?: string;
   current_step?: number;
   session_status?: string;
+  conversation_llm?: LlmMetadata;
   thought_record?: ReportItem;
   chat_history?: Array<{ role?: string; content?: string }>;
   turns?: Array<Record<string, unknown>>;
@@ -132,6 +140,7 @@ export type Report = {
   llm_action_items?: string[];
   llm_error: string | null;
   profile_context_used?: boolean;
+  report_llm?: LlmMetadata;
 };
 
 export type AppSettings = {

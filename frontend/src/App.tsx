@@ -14,7 +14,7 @@ import {
   startSession,
   updateSettings
 } from "./api";
-import type { AppSettings, ChatMessage, Report, ReportItem, ReportSession, SavedReportSummary, SessionArchiveItem, SessionDetail } from "./types";
+import type { AppSettings, ChatMessage, LlmMetadata, Report, ReportItem, ReportSession, SavedReportSummary, SessionArchiveItem, SessionDetail } from "./types";
 
 function makeMessage(role: ChatMessage["role"], text: string): ChatMessage {
   return {
@@ -110,6 +110,16 @@ function reportActionItems(report: Report) {
   return generated.length ? generated.slice(0, 3) : defaultActionItems(report);
 }
 
+function llmLabel(meta?: LlmMetadata | null) {
+  if (!meta) return "LLM unavailable";
+  const provider = meta.provider || "";
+  const model = meta.model || "";
+  if (!provider && !model) return "LLM unavailable";
+  if (provider === "ollama") return model ? `Ollama · ${model}` : "Ollama";
+  if (provider === "openai_compatible" || provider === "api") return model ? `API · ${model}` : "API";
+  return [provider, model].filter(Boolean).join(" · ");
+}
+
 function sessionDetailUrl(sessionId?: string | null) {
   return sessionId ? `/sessions?session_id=${encodeURIComponent(sessionId)}` : "/sessions";
 }
@@ -125,6 +135,22 @@ function newestFirst<T extends { date?: string; session_id?: string }>(items: T[
 function AppFrame({ children, active = "welcome" }: { children: React.ReactNode; active?: "welcome" | "session" | "reports" }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [activeSettings, setActiveSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    getSettings()
+      .then((data) => setActiveSettings(data))
+      .catch(() => setActiveSettings(null));
+  }, []);
+
+  const modelBadge = activeSettings
+    ? activeSettings.llm_provider === "ollama"
+      ? activeSettings.llm_model || "Ollama"
+      : activeSettings.llm_model || "API"
+    : "Model";
+  const modelBadgeTitle = activeSettings
+    ? `Provider: ${activeSettings.llm_provider}; Model: ${activeSettings.llm_model}`
+    : "Model settings";
 
   return (
     <div className="page-shell">
@@ -148,6 +174,10 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
             </a>
           </div>
           <div className="nav-actions">
+            <span className="model-badge" title={modelBadgeTitle}>
+              <span className="material-symbols-outlined small-icon">memory</span>
+              {modelBadge}
+            </span>
             <button className="icon-btn" type="button" aria-label="Settings" onClick={() => setIsSettingsOpen(true)}>
               <span className="material-symbols-outlined">settings</span>
             </button>
@@ -159,7 +189,7 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
       </nav>
 
       <main className="wrap">{children}</main>
-      {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} />}
+      {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} onSaved={setActiveSettings} />}
       {isProfileOpen && <ProfileDialog onClose={() => setIsProfileOpen(false)} />}
     </div>
   );
@@ -183,26 +213,29 @@ function useSettingsForm() {
   }
 
   async function saveSettings(nextSettings = settings) {
-    if (!nextSettings) return;
+    if (!nextSettings) return undefined;
     setStatus("Saving...");
     try {
       const next = await updateSettings(nextSettings);
       setSettings(next);
       setStatus("Saved. New sessions will use these settings.");
+      return next;
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Could not save settings.");
+      return undefined;
     }
   }
 
   return { settings, setField, saveSettings, status };
 }
 
-function SettingsDialog({ onClose }: { onClose: () => void }) {
+function SettingsDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: (settings: AppSettings) => void }) {
   const { settings, setField, saveSettings, status } = useSettingsForm();
 
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await saveSettings();
+    const next = await saveSettings();
+    if (next) onSaved?.(next);
   }
 
   return (
@@ -226,9 +259,9 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               <label>
                 Provider
                 <select value={settings.llm_provider} onChange={(event) => setField("llm_provider", event.target.value)}>
-                  <option value="ollama">ollama</option>
-                  <option value="openai_compatible">openai_compatible</option>
-                  <option value="api">api</option>
+                  <option value="ollama">Ollama</option>
+                  <option value="openai_compatible">API (OpenAI-compatible)</option>
+                  <option value="api">API</option>
                 </select>
               </label>
               <label>
@@ -255,7 +288,8 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
 
             <p className="settings-note">
               Relative paths such as "sessions" and "reports" are resolved from the project root, so they work on another computer too.
-              API keys are not stored here; set the real key in your terminal environment.
+              Provider chooses whether requests go to Ollama or an API. Model is the model name sent to that provider. API keys are not
+              stored here; set the real key in your terminal environment.
             </p>
             {status && <p className="settings-status">{status}</p>}
             <div className="settings-actions">
@@ -326,6 +360,133 @@ function ProfileDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+function ThoughtRecordConversation({
+  sessionId,
+  currentStep,
+  llm,
+  messages,
+  draft,
+  setDraft,
+  isSending,
+  isSessionComplete,
+  recordUrl,
+  error,
+  logRef,
+  onSend
+}: {
+  sessionId: string;
+  currentStep: number | null;
+  llm?: LlmMetadata | null;
+  messages: ChatMessage[];
+  draft: string;
+  setDraft: (value: string) => void;
+  isSending: boolean;
+  isSessionComplete: boolean;
+  recordUrl: string | null;
+  error: string | null;
+  logRef: React.RefObject<HTMLDivElement | null>;
+  onSend: () => Promise<void>;
+}) {
+  return (
+    <AppFrame active="session">
+      <div className="conversation-shell">
+        <header className="conversation-header">
+          <div className="eyebrow">Current Session</div>
+          <h1 className="conversation-title">Thought Record Session</h1>
+          <p className="conversation-copy">Work through one difficult moment, one step at a time.</p>
+          <div className="session-meta-row">
+            <div className="session-chip">
+              <span className="material-symbols-outlined small-icon">psychology</span>
+              <span>
+                Session {sessionId} · Step {currentStep}
+              </span>
+            </div>
+            <div className="session-chip">
+              <span className="material-symbols-outlined small-icon">receipt_long</span>
+              <span>Session data is saved locally</span>
+            </div>
+            <div className="session-chip">
+              <span className="material-symbols-outlined small-icon">memory</span>
+              <span>Conversation LLM: {llmLabel(llm)}</span>
+            </div>
+          </div>
+        </header>
+
+        <div className="panel chat-panel-card">
+          <div>
+            <div className="chat">
+              <div className="log" ref={logRef}>
+                {messages.map((message) => (
+                  <div className={`msg ${message.role}`} key={message.id}>
+                    {message.role === "assistant" && (
+                      <div className={`avatar ${message.role}`}>
+                        <span className="material-symbols-outlined filled">spa</span>
+                      </div>
+                    )}
+                    <div className="bubble-wrap">
+                      <div className="bubble">{message.text}</div>
+                      <div className="timestamp">{formatTime(message.createdAt)}</div>
+                    </div>
+                    {message.role === "user" && (
+                      <div className={`avatar ${message.role}`}>
+                        <span className="material-symbols-outlined">person</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="composer-shell">
+              <div className="focus-row">
+                <span className="focus-label">Start with:</span>
+                <span className="focus-chip">Situation</span>
+                <span className="focus-chip">Emotion</span>
+                <span className="focus-chip">Automatic Thought</span>
+              </div>
+              <form
+                className="composer"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void onSend();
+                }}
+              >
+                <input
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  disabled={isSessionComplete}
+                  type="text"
+                  placeholder="Share your thoughts here..."
+                  autoComplete="off"
+                />
+                <button className="btn-primary" type="submit" disabled={isSending || isSessionComplete || !draft.trim()}>
+                  <span>{isSending ? "Sending" : "Send"}</span>
+                  <span className="material-symbols-outlined small-icon">send</span>
+                </button>
+              </form>
+              <div className="input-note">This tool supports structured self-reflection and does not replace professional care.</div>
+            </div>
+          </div>
+        </div>
+
+        {error && !messages.some((message) => message.text === error) && <div className="error-banner">{error}</div>}
+
+        {isSessionComplete && recordUrl && (
+          <div className="completion-banner">
+            <div className="completion-copy">
+              Your thought record is ready to review. Open the full record to see the completed worksheet content.
+            </div>
+            <a className="btn-primary" href={sessionDetailUrl(sessionId)}>
+              <span className="material-symbols-outlined small-icon">description</span>
+              View Thought Record
+            </a>
+          </div>
+        )}
+      </div>
+    </AppFrame>
+  );
+}
+
 function HomePage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<number | null>(null);
@@ -338,6 +499,7 @@ function HomePage() {
   const [isSending, setIsSending] = useState(false);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conversationLlm, setConversationLlm] = useState<LlmMetadata | null>(null);
   const logRef = useRef<HTMLDivElement | null>(null);
 
   const canStart = useMemo(() => !sessionId || isSessionComplete, [isSessionComplete, sessionId]);
@@ -375,8 +537,15 @@ function HomePage() {
 
     try {
       const data = await startSession();
+      const settings = await getSettings();
       setSessionId(data.session_id);
       setCurrentStep(data.current_step);
+      setConversationLlm({
+        provider: settings.llm_provider,
+        model: settings.llm_model,
+        url: settings.llm_url,
+        api_key_env_var: settings.api_key_env_var
+      });
       setMessages([makeMessage("assistant", data.message)]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to start session.";
@@ -416,98 +585,20 @@ function HomePage() {
 
   if (sessionId) {
     return (
-      <AppFrame active="session">
-        <div className="conversation-shell">
-          <header className="conversation-header">
-            <div className="eyebrow">Current Session</div>
-            <h1 className="conversation-title">Thought Record Session</h1>
-            <p className="conversation-copy">Work through one difficult moment, one step at a time.</p>
-            <div className="session-meta-row">
-              <div className="session-chip">
-                <span className="material-symbols-outlined small-icon">psychology</span>
-                <span>
-                  Session {sessionId} · Step {currentStep}
-                </span>
-              </div>
-              <div className="session-chip">
-                <span className="material-symbols-outlined small-icon">receipt_long</span>
-                  <span>Session data is saved locally</span>
-              </div>
-            </div>
-          </header>
-
-          <div className="panel chat-panel-card">
-            <div>
-              <div className="chat">
-                <div className="log" ref={logRef}>
-                  {messages.map((message) => (
-                    <div className={`msg ${message.role}`} key={message.id}>
-                      {message.role === "assistant" && (
-                        <div className={`avatar ${message.role}`}>
-                          <span className="material-symbols-outlined filled">spa</span>
-                        </div>
-                      )}
-                      <div className="bubble-wrap">
-                        <div className="bubble">{message.text}</div>
-                        <div className="timestamp">{formatTime(message.createdAt)}</div>
-                      </div>
-                      {message.role === "user" && (
-                        <div className={`avatar ${message.role}`}>
-                          <span className="material-symbols-outlined">person</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="composer-shell">
-                <div className="focus-row">
-                  <span className="focus-label">Start with:</span>
-                  <span className="focus-chip">Situation</span>
-                  <span className="focus-chip">Emotion</span>
-                  <span className="focus-chip">Automatic Thought</span>
-                </div>
-                <form
-                  className="composer"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleSend();
-                  }}
-                >
-                  <input
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    disabled={isSessionComplete}
-                    type="text"
-                    placeholder="Share your thoughts here..."
-                    autoComplete="off"
-                  />
-                  <button className="btn-primary" type="submit" disabled={isSending || isSessionComplete || !draft.trim()}>
-                    <span>{isSending ? "Sending" : "Send"}</span>
-                    <span className="material-symbols-outlined small-icon">send</span>
-                  </button>
-                </form>
-                <div className="input-note">This tool supports structured self-reflection and does not replace professional care.</div>
-              </div>
-            </div>
-          </div>
-
-          {error && !messages.some((message) => message.text === error) && <div className="error-banner">{error}</div>}
-
-          {isSessionComplete && recordUrl && (
-            <div className="completion-banner">
-              <div className="completion-copy">
-                Your thought record is ready to review. Open the full record to see the completed worksheet content.
-              </div>
-              <a className="btn-primary" href={sessionDetailUrl(sessionId)}>
-                <span className="material-symbols-outlined small-icon">description</span>
-                View Thought Record
-              </a>
-            </div>
-          )}
-        </div>
-      </AppFrame>
+      <ThoughtRecordConversation
+        sessionId={sessionId}
+        currentStep={currentStep}
+        llm={conversationLlm}
+        messages={messages}
+        draft={draft}
+        setDraft={setDraft}
+        isSending={isSending}
+        isSessionComplete={isSessionComplete}
+        recordUrl={recordUrl}
+        error={error}
+        logRef={logRef}
+        onSend={handleSend}
+      />
     );
   }
 
@@ -681,16 +772,24 @@ function SessionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeCurrentStep, setActiveCurrentStep] = useState<number | null>(null);
+  const [activeMessages, setActiveMessages] = useState<ChatMessage[]>([]);
+  const [activeDraft, setActiveDraft] = useState("");
+  const [activeRecordUrl, setActiveRecordUrl] = useState<string | null>(null);
+  const [isStartingNew, setIsStartingNew] = useState(false);
+  const [isSendingActive, setIsSendingActive] = useState(false);
+  const [isActiveComplete, setIsActiveComplete] = useState(false);
+  const [activeConversationLlm, setActiveConversationLlm] = useState<LlmMetadata | null>(null);
+  const activeLogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    listSessions()
-      .then((data) => {
-        const items = data.items || [];
-        setSessions(items);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load sessions."))
-      .finally(() => setIsLoading(false));
+    void refreshSessions();
   }, []);
+
+  useEffect(() => {
+    activeLogRef.current?.scrollTo({ top: activeLogRef.current.scrollHeight, behavior: "smooth" });
+  }, [activeMessages]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -713,6 +812,99 @@ function SessionsPage() {
     setDetail(null);
   }
 
+  async function refreshSessions() {
+    setIsLoading(true);
+    try {
+      const data = await listSessions();
+      setSessions(data.items || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load sessions.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleStartNewSession() {
+    if (isStartingNew) return;
+    setIsStartingNew(true);
+    setError(null);
+    setSelectedId(null);
+    setDetail(null);
+    setActiveSessionId(null);
+    setActiveCurrentStep(null);
+    setActiveMessages([]);
+    setActiveDraft("");
+    setActiveRecordUrl(null);
+    setIsActiveComplete(false);
+    setActiveConversationLlm(null);
+
+    try {
+      const data = await startSession();
+      const settings = await getSettings();
+      setActiveSessionId(data.session_id);
+      setActiveCurrentStep(data.current_step);
+      setActiveConversationLlm({
+        provider: settings.llm_provider,
+        model: settings.llm_model,
+        url: settings.llm_url,
+        api_key_env_var: settings.api_key_env_var
+      });
+      setActiveMessages([makeMessage("assistant", data.message)]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to start session.";
+      setError(message);
+      setActiveMessages([makeMessage("assistant", message)]);
+    } finally {
+      setIsStartingNew(false);
+    }
+  }
+
+  async function handleSendActive() {
+    const message = activeDraft.trim();
+    if (!message || !activeSessionId || isActiveComplete || isSendingActive) return;
+
+    setActiveDraft("");
+    setIsSendingActive(true);
+    setError(null);
+    setActiveMessages((current) => [...current, makeMessage("user", message)]);
+
+    try {
+      const data = await sendMessage(activeSessionId, message);
+      setActiveCurrentStep(data.current_step);
+      setIsActiveComplete(data.session_completed);
+      setActiveRecordUrl(data.record_url);
+      setActiveMessages((current) => [...current, makeMessage("assistant", data.message)]);
+      if (data.session_completed) {
+        await refreshSessions();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error processing message.";
+      setError(message);
+      setActiveMessages((current) => [...current, makeMessage("assistant", message)]);
+    } finally {
+      setIsSendingActive(false);
+    }
+  }
+
+  if (activeSessionId) {
+    return (
+      <ThoughtRecordConversation
+        sessionId={activeSessionId}
+        currentStep={activeCurrentStep}
+        llm={activeConversationLlm}
+        messages={activeMessages}
+        draft={activeDraft}
+        setDraft={setActiveDraft}
+        isSending={isSendingActive}
+        isSessionComplete={isActiveComplete}
+        recordUrl={activeRecordUrl}
+        error={error}
+        logRef={activeLogRef}
+        onSend={handleSendActive}
+      />
+    );
+  }
+
   return (
     <AppFrame active="session">
       <section className="hero report-hero">
@@ -721,10 +913,10 @@ function SessionsPage() {
           <h1 className="title">Past Sessions</h1>
           <div className="meta-head">Review completed thought record sessions without generating a report.</div>
         </div>
-        <a className="status-pill" href="/">
+        <button className="status-pill" type="button" onClick={handleStartNewSession} disabled={isStartingNew}>
           <span className="material-symbols-outlined small-icon">add_circle</span>
-          <span>New Session</span>
-        </a>
+          <span>{isStartingNew ? "Starting..." : "New Session"}</span>
+        </button>
       </section>
 
       <div className="session-archive-detail">
@@ -802,6 +994,7 @@ function SessionsPage() {
                     <div className="eyebrow">Session {detail.session_id}</div>
                     <h2>{record.emotion || "Thought Record"}</h2>
                     <p>{record.date || detail.last_updated || "Date unavailable"}</p>
+                    <p>Conversation LLM: {llmLabel(detail.conversation_llm)}</p>
                   </div>
                   <div className="session-detail-actions">
                     <button className="button secondary" type="button" onClick={returnToList}>
@@ -1220,13 +1413,14 @@ function StitchSingleReportPage({ report, saveControl }: { report: Report; saveC
   const after = report.metrics.intensity_after ?? item.intensity_after ?? null;
   const generatedSummary = generatedReportText(report);
   const actionItems = reportActionItems(report);
+  const reportLlm = llmLabel(report.report_llm);
 
   return (
     <AppFrame active="reports">
       <StitchReportHeader
         eyebrow="Session Archive"
         title="Session Reflection Report"
-        subtitle={`Session ${item.session_id || ""} · Generated at ${report.generated_at}`}
+        subtitle={`Session ${item.session_id || ""} · Generated at ${report.generated_at} · Report LLM: ${reportLlm}`}
         status="Single Session"
       />
       {saveControl}
@@ -1270,13 +1464,14 @@ function StitchMultiReportPage({ report, saveControl }: { report: Report; saveCo
   const sessionCount = metrics.total_sessions_in_scope ?? report.sessions.length;
   const generatedSummary = generatedReportText(report);
   const actionItems = reportActionItems(report);
+  const reportLlm = llmLabel(report.report_llm);
 
   return (
     <AppFrame active="reports">
       <StitchReportHeader
         eyebrow="Session Archives"
         title="Pattern Insight Report"
-        subtitle={`Report ID ${report.report_id} · Generated at ${report.generated_at}`}
+        subtitle={`Report ID ${report.report_id} · Generated at ${report.generated_at} · Report LLM: ${reportLlm}`}
         status={`${sessionCount} Sessions`}
       />
       {saveControl}

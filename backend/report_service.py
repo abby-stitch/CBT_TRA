@@ -437,6 +437,12 @@ def generate_report(
         "llm_error": None,
         "include_llm_summary": include_llm_summary,
         "profile_context_used": bool(user_context.strip()),
+        "report_llm": {
+            "provider": config.LLM_PROVIDER,
+            "model": config.LLM_MODEL,
+            "url": config.LLM_URL,
+            "api_key_env_var": config.API_KEY_ENV_VAR,
+        },
     }
     if include_llm_summary:
         summary, action_items, error = _generate_llm_report_summary(

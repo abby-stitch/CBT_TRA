@@ -1,12 +1,34 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from backend import config
 
 SETTINGS_PATH = config.PROJECT_ROOT / "app_settings.json"
+ENV_PATH = config.PROJECT_ROOT / ".env"
+
+
+def load_env_file() -> None:
+    if not ENV_PATH.exists():
+        return
+    try:
+        lines = ENV_PATH.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return
+
+    for line in lines:
+        raw = line.strip()
+        if not raw or raw.startswith("#") or "=" not in raw:
+            continue
+        key, value = raw.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        value = value.strip().strip('"').strip("'")
+        os.environ[key] = value
 
 
 def _default_settings() -> dict[str, str]:
@@ -22,6 +44,7 @@ def _default_settings() -> dict[str, str]:
 
 
 def load_settings() -> dict[str, str]:
+    load_env_file()
     settings = _default_settings()
     if SETTINGS_PATH.exists():
         try:

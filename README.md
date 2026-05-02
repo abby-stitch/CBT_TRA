@@ -1,6 +1,6 @@
 # TRA / doubaotest 使用说明（Terminal + Web）
 
-本仓库当前主要用于验证一个 CBT Thought Record Agent 的“终端交互版”和“网页交互版”两种运行方式。两者复用同一套核心逻辑：`CBTAgent.extract_and_fill()`（抽取并更新 thought_record）+ `CBTAgent.respond()`（生成下一轮对话引导），并在每一轮对话后把会话保存为 JSON 文件。
+本仓库当前主要用于验证一个 CBT Thought Record Agent 的“终端交互版”和“网页交互版”两种运行方式。两者复用同一套核心逻辑：`CBTAgent.extract_and_fill()`（抽取并更新 thought_record）+ `CBTAgent.respond()`（生成下一轮对话引导）。用户发送第一条消息后，session 会保存为本地 JSON；只打开新 session 但没有输入内容时不会保存空文件。
 
 目录位置：
 - 终端版入口：`doubaotest/backend/main.py`
@@ -8,7 +8,8 @@
 - 旧版一体化网页入口：`doubaotest/backend/web_app.py`
 - React 前端：`doubaotest/frontend/`
 - 核心 Agent：`doubaotest/backend/agent.py`
-- 会话保存目录：`doubaotest/sessions/`（每轮都会写入 `session_<session_id>.json`）
+- 会话保存目录：`doubaotest/sessions/`（用户开始输入后写入 `session_<session_id>.json`）
+- 报告保存目录：`doubaotest/reports/`（点击 `Save Report` 后写入 `report_<report_id>.json`）
 
 ---
 
@@ -78,9 +79,24 @@ LLM_MODEL = "qwen2.5:7b"
 
 ### 4) API Key 环境变量怎么设置
 
-项目不会把真实 API key 写进代码或 `app_settings.json`。代码只保存环境变量名，例如 `OPENAI_API_KEY`，真正的 key 需要你在启动后端前放进终端环境。
+项目不会把真实 API key 写进代码或 `app_settings.json`。代码只保存环境变量名，例如 `OPENAI_API_KEY`。真正的 key 推荐放在项目根目录 `.env` 文件中，或者临时 export 到终端环境。
 
-macOS / Linux / zsh 临时设置：
+推荐方式：复制 `.env.example` 为 `.env`：
+
+```bash
+cp .env.example .env
+```
+
+然后编辑 `.env`：
+
+```text
+OPENAI_API_KEY=你的真实 key
+```
+
+后端会在读取 settings 时自动加载项目根目录 `.env`。`.env` 已加入 `.gitignore`，不要提交真实 key。
+
+临时方式：macOS / Linux / zsh 中 export：
+
 
 ```bash
 export OPENAI_API_KEY="你的真实 key"
@@ -154,6 +170,11 @@ reports
 - settings 图标：修改模型、API URL、保存路径
 - 人像图标：填写个人 CBT 背景信息，作为新 session 的可选上下文
 
+顶部导航右侧会显示当前 settings 中的模型名，例如 `gemma2:9b` 或 `gpt-4o`。Conversation 页面和 report 页面也会记录并显示实际使用的 LLM：
+
+- conversation 使用的 LLM 写入 session JSON 的 `conversation_llm`
+- report generation 使用的 LLM 写入 report JSON 的 `report_llm`
+
 ---
 
 ## Terminal 版本怎么用
@@ -173,7 +194,7 @@ uv run python -m backend.main
 
 - 程序启动后会先输出一句开场白（Step 1）
 - 你在 `You:` 后输入文字（可以一次输入很多信息，例如 situation+emotion+intensity+thought）
-- 每轮都会：
+- 用户发送第一条消息后，每轮都会：
   - 更新 `thought_record`
   - `Hard-Check` 判断当前 Step 是否完成（完成则 Step + 1）
   - 输出下一轮问题
@@ -231,7 +252,9 @@ npm run dev
 React 前端目前接管这些页面：
 
 - `/`
+- `/sessions`
 - `/reports`
+- `/reports/saved`
 - `/reports/session/<session_id>`
 - `/reports/multi?mode=recent&limit=3`
 - `/reports/multi?mode=custom&session_ids=<id1,id2>`
@@ -246,9 +269,12 @@ React 前端目前接管这些页面：
 1. 在首页选择一个最近让情绪明显变化的具体时刻；如果事情持续了一段时间，先聚焦情绪最强烈的片刻
 2. 点击 `Start Thought Record` 开始会话（会创建一个新的 `CBTAgent`）
 3. 在输入框像聊天一样输入内容并发送；前端会显示当前 session、step、聊天记录和基础记录焦点
-4. 每轮发送后，后端会抽取可填写的信息、更新 `thought_record`、判断当前 step 是否完成，并保存 session JSON
+4. 第一条用户消息发送后，后端会抽取可填写的信息、更新 `thought_record`、判断当前 step 是否完成，并保存 session JSON
 5. 当 Step 全部完成后，会出现 `View Thought Record` 按钮
-6. 点击 `View Thought Record` 会跳转到 `/reports/session/<session_id>`，查看该 session 的结构化报告内容
+6. 点击 `View Thought Record` 会跳转到 `/sessions?session_id=<session_id>`，查看该 session 的结构化 thought record 内容，不会调用 report LLM
+7. 在 session 详情页点击 `Generate Report` 才会生成 single session report
+8. 在 `/reports` 可以生成 recent/custom multi-session report，也可以展开或进入 saved reports
+9. 在 `/reports/saved` 可以查看或删除已保存 report。删除 report 不会修改 session
 
 ### 网页版的关键接口（便于调试）
 
@@ -256,15 +282,19 @@ React 前端目前接管这些页面：
 - `POST /api/start`：创建新 session，返回开场白 + 初始 thought_record
 - `POST /api/message`：处理一轮用户消息（抽取、hard-check、生成回复、保存 session）
 - `GET /api/report-sessions`：列出 completed sessions
-- `GET /api/reports/session/{session_id}`：生成单个 session 的报告数据
-- `GET /api/reports/multi`：生成多 session 的报告数据
-- `POST /api/reports/generate`：生成并保存 report JSON
+- `GET /api/sessions`：列出 session archive 中的 completed sessions
+- `GET /api/sessions/{session_id}`：读取 completed session 的 thought record，不调用 LLM
+- `GET /api/reports/session/{session_id}`：生成单个 session 的报告数据，会调用 report LLM
+- `GET /api/reports/multi`：生成多 session 的报告数据，会调用 report LLM
+- `POST /api/reports/save`：保存当前已经生成好的 report JSON，不重新调用 LLM
+- `GET /api/reports/{report_id}`：读取已保存 report，不调用 LLM
+- `DELETE /api/reports/{report_id}`：删除已保存 report，不修改 session
 
 ---
 
 ## 数据保存位置
 
-每轮对话都会保存会话 JSON 到 `SESSIONS_DIR` 指定的目录下（默认项目根目录的 `sessions/`，见 `backend/config.py`）：
+用户发送第一条消息后，会话 JSON 会保存到 `SESSIONS_DIR` 指定的目录下（默认项目根目录的 `sessions/`，见 `backend/config.py`）：
 
 - `sessions/session_<session_id>.json`
 
@@ -272,6 +302,7 @@ React 前端目前接管这些页面：
 - `thought_record`（核心表单）
 - `chat_history`（消息级别历史）
 - `turns`（每一轮的 step_before/step_after/user/assistant 事件日志）
+- `conversation_llm`（conversation 实际使用的 provider/model/url）
 
 ---
 
@@ -282,6 +313,13 @@ React 前端目前接管这些页面：
 - `backend/report_cli.py`
 
 它会直接读取 `sessions/` 里的已完成 session，并把结果保存到 `reports/`。
+
+网页端的报告逻辑是：
+
+- `Generate Report` 会调用 LLM 生成 report summary 和 action items
+- `Save Report` 只保存当前 report，不再次调用 LLM
+- `Saved Reports` 只读取本地 JSON
+- `Delete Report` 只删除 `reports/report_<report_id>.json`，不影响 `sessions/`
 
 ### 1) 查看哪些 completed sessions 可以拿来做报告
 
@@ -332,13 +370,12 @@ uv run uvicorn backend.api_app:app --reload --port 8000
 - 多个 session 报告（自定义 session）：
   - `http://127.0.0.1:5173/reports/multi?mode=custom&session_ids=20260424_172104,20260426_234844,20260427_223447`
 
-### 当前建议的开发顺序
+### 提交前检查
 
-建议你先把报告功能当成独立后端能力完成：
+提交或打包前请确认：
 
-1. session 筛选逻辑
-2. 单 session / 多 session 报告结构
-3. 报告保存与读取
-4. 最后再单独做前端页面，把这些能力接进去
-
-这样网页只负责“展示”和“选择”，不会反过来限制你的功能设计。
+1. `.env` 没有被提交，真实 API key 只放在本地。
+2. `app_settings.json` 没有被提交。
+3. `sessions/session_*.json` 和 `reports/report_*.json` 默认不提交；如需展示样例，请先匿名化并改成单独 sample 文件。
+4. 运行 `uv run python -m compileall backend`。
+5. 运行 `cd frontend && npm run build`。
