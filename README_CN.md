@@ -1,26 +1,74 @@
-# CBT Thought Record
+# CBT Thought Record 中文说明
 
-A local web app that guides users through a structured CBT thought record, saves sessions on the user's machine, and generates reflection reports from completed records.
+CBT Thought Record 是一个本地运行的 CBT 思维记录网页应用。它会引导用户围绕一个具体情绪事件完成结构化 thought record，并把 session 和 report 保存为本地 JSON 文件。
 
-This project is a self-reflection and study prototype. It is not a medical device, diagnostic tool, therapy replacement, or emergency support service.
+本项目是自我反思和课程原型，不是医疗设备、诊断工具、治疗替代品或紧急支持服务。
 
-## 中文简介
+## 项目功能
 
-CBT Thought Record 是一个本地运行的 CBT 思维记录辅助工具。用户可以围绕一个具体情绪事件完成结构化 thought record，包括 situation、emotion、automatic thought、evidence、distortions、balanced thought 和 intensity re-rating。
+用户可以完成一个 7-step thought record：
 
-项目支持：
+- 描述具体情境
+- 记录主要情绪和初始强度
+- 识别 automatic thought
+- 分别记录支持和不支持该想法的证据
+- 识别可能的 cognitive distortions
+- 写出更平衡的想法
+- 重新评估情绪强度并查看总结
 
-- 本地 Ollama 模型或 OpenAI-compatible API
-- 多个未完成 session 同时保存，并可之后继续
-- completed sessions 的单 session / 多 session 报告生成
-- 本地 JSON 保存，不上传用户数据
-- Docker 单镜像运行
+当前实现包括：
 
-## Quick Start
+- 本地 Ollama 或 OpenAI-compatible API
+- 本地 session JSON 保存，空 session 不落盘
+- `completed`、`in_progress`、`stopped` session archive
+- 未完成 session 可继续
+- 单 session / 多 session report 生成
+- 已保存 report 可重新查看，不重新调用 LLM
+- Reports 页面显示 distortion 出现次数统计，只展示出现过的 label，并按次数排序
+- 顶部书本图标和 Step 4 对话气泡内都可以查看 cognitive distortion definitions
+- 可选 personal context，用于新 conversation 和 report summary
 
-For a step-by-step bilingual guide, use [RUNNING.md](RUNNING.md). It includes Docker installation, Ollama installation, Windows/macOS/Linux commands, API mode, and troubleshooting.
+## 页面预览
 
-Short Docker flow:
+### 首页
+
+![首页](docs/screenshots/home.png)
+
+### Session
+
+![Thought Record Session](docs/screenshots/session.png)
+
+### Reports
+
+![Reports 页面](docs/screenshots/report.png)
+
+## 使用方式
+
+本项目有两种使用方式：
+
+- **普通用户**：使用 Docker image 运行，不需要改代码。
+- **开发者**：clone repository，本地开发时开两个 terminal，不需要 Docker。
+
+详细中英文运行指南见 [RUNNING.md](RUNNING.md)。
+
+## 普通用户：Docker 运行
+
+### 1. 安装 Docker 和 Ollama
+
+官方链接：
+
+- Docker: https://docs.docker.com/installation/
+- Ollama: https://ollama.com/download/
+
+下载默认本地模型：
+
+```bash
+ollama pull gemma2:9b
+```
+
+### 2. 构建并运行
+
+如果是从 GitHub clone 源码，在项目根目录运行：
 
 ```bash
 docker build --no-cache -t cbt-thought-record-agent .
@@ -33,13 +81,15 @@ docker run --rm \
   cbt-thought-record-agent
 ```
 
-Open:
+然后打开：
 
 ```text
 http://localhost:8000
 ```
 
-Default Docker configuration uses local Ollama:
+如果已经发布了预构建 Docker image，用户可以跳过 `docker build`，在 `docker run` 最后一行使用发布后的 image 名称。
+
+Docker image 默认使用本机 Ollama：
 
 ```text
 Provider: ollama
@@ -47,76 +97,41 @@ Model: gemma2:9b
 URL: http://host.docker.internal:11434/api/generate
 ```
 
-Before running with Ollama, install Ollama and pull the default model:
+注意：Docker 容器里的 `localhost` 指容器自己，不是用户电脑。如果手动修改 settings，Docker 模式下 Ollama URL 应使用 `host.docker.internal`。
+
+Linux Docker Engine 如果无法识别 `host.docker.internal`，运行容器时加：
 
 ```bash
-ollama pull gemma2:9b
+--add-host=host.docker.internal:host-gateway
 ```
 
-Official installation links:
+## 使用 OpenAI-compatible API
 
-- Docker: https://docs.docker.com/installation/
-- Ollama: https://ollama.com/download/
-
-## Features
-
-- **Guided thought record**: The assistant walks through the CBT thought record steps one turn at a time.
-- **Local sessions**: Sessions are saved as JSON files under `sessions/` after the user sends a message.
-- **Resume in-progress work**: `in_progress` sessions stay in the archive and can be resumed later.
-- **Reports**: Completed sessions can be used to generate single-session or multi-session reports.
-- **Saved reports**: Generated reports can be saved locally under `reports/` and reopened without regenerating LLM content.
-- **Settings**: Switch between local Ollama and API mode, edit model names, URLs, data folders, and API key environment variable names.
-- **Personal context**: Optional user-provided context can be included in new conversations and report summaries.
-
-## Run Locally for Development
-
-Backend:
-
-```bash
-uv sync
-uv run uvicorn backend.api_app:app --reload --port 8000
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://127.0.0.1:5173
-```
-
-The Vite frontend proxies `/api/...` requests to `http://127.0.0.1:8000`.
-
-## Configuration
-
-Default local development settings are in [backend/config.py](backend/config.py):
-
-```python
-LLM_PROVIDER = "ollama"
-LLM_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "gemma2:9b"
-API_KEY_ENV_VAR = "OPENAI_API_KEY"
-```
-
-Runtime settings changed in the web UI are saved to `app_settings.json`, which is intentionally ignored by git.
-
-For API mode, copy the example env file and set your real key locally:
+复制环境变量示例：
 
 ```bash
 cp .env.example .env
 ```
 
+在 `.env` 中填写真实 key：
+
 ```text
 OPENAI_API_KEY=your_real_api_key
 ```
 
-In Settings, choose:
+运行 Docker 时传入 `.env`：
+
+```bash
+docker run --rm \
+  -p 8000:8000 \
+  -e TZ=Asia/Hong_Kong \
+  --env-file .env \
+  -v "$PWD/sessions:/app/sessions" \
+  -v "$PWD/reports:/app/reports" \
+  cbt-thought-record-agent
+```
+
+在页面 Settings 中选择：
 
 ```text
 Provider: API
@@ -125,53 +140,107 @@ Model: your_model_name
 API key env var: OPENAI_API_KEY
 ```
 
-Other OpenAI-compatible providers can be used by replacing the URL with their compatible base URL or full `/chat/completions` endpoint.
+其他 OpenAI-compatible 服务也可以使用，只需要把 URL 改成对应服务的 base URL 或完整 `/chat/completions` endpoint。
 
-## Data and Privacy
+## 开发者：本地运行源码
 
-The project stores user data locally:
+本地开发不需要 Docker。开两个 terminal：
+
+Terminal 1，启动后端：
+
+```bash
+uv sync
+uv run uvicorn backend.api_app:app --reload --port 8000
+```
+
+Terminal 2，启动前端：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+打开：
+
+```text
+http://127.0.0.1:5173
+```
+
+Vite dev server 会把 `/api/...` 请求代理到 `http://127.0.0.1:8000`。
+
+## 配置说明
+
+本地开发默认配置在 [backend/config.py](backend/config.py)：
+
+```python
+LLM_PROVIDER = "ollama"
+LLM_URL = "http://localhost:11434/api/generate"
+LLM_MODEL = "gemma2:9b"
+API_KEY_ENV_VAR = "OPENAI_API_KEY"
+```
+
+Docker image 会通过 Dockerfile 设置 Docker 专用默认值：
+
+```text
+LLM_URL=http://host.docker.internal:11434/api/generate
+```
+
+因此本地开发和 Docker 使用不会互相影响。
+
+页面 Settings 修改的配置会写入 `app_settings.json`。该文件已被 git ignore，不应上传。
+
+## 数据和隐私
+
+项目运行时会在本地保存：
 
 - `sessions/session_<id>.json`
 - `reports/report_<id>.json`
 - `app_settings.json`
 - `.env`
 
-These files are ignored by git and should not be uploaded to GitHub. If you need example data, create anonymized sample files separately.
+这些文件都不应该上传 GitHub。如果需要示例数据，应单独创建匿名化样例。
 
-## Project Structure
+## 项目结构
 
 ```text
 backend/
-  agent.py            Core CBT agent workflow
-  api_app.py          FastAPI JSON API and production frontend serving
-  report_service.py   Report data aggregation and LLM report summary
-  storage.py          Session JSON saving
+  agent.py            CBT agent 核心流程
+  api_app.py          FastAPI API 和生产模式前端静态托管
+  knowledge_base.py   CBT step guidance 和 distortion definitions
+  report_service.py   Report 聚合和 LLM summary 生成
+  storage.py          Session JSON 保存
 frontend/
-  src/                React frontend
-Dockerfile            Single-image Docker build
-RUNNING.md            End-user run guide
-README_DEV.md         Longer development notes and history
+  src/                React 前端
+  src/distortionGuide.ts  Step 4 和顶部书本入口使用的静态 distortion guide
+Dockerfile            单镜像 Docker 打包
+RUNNING.md            中英文用户运行指南
+README.md             英文项目说明
+README_DEV.md         更详细的开发记录
 ```
 
-## Main Routes
+## 主要页面
 
-- `/` - start a thought record
-- `/sessions` - session archive and resume flow
-- `/reports` - report generation page
-- `/reports/saved` - saved reports
-- `/reports/session/<session_id>` - single-session report preview
-- `/reports/multi?...` - multi-session report preview
+- `/`：开始 thought record
+- `/sessions`：session archive，可查看、继续或删除 session
+- `/reports`：生成 report，并查看 distortion overview
+- `/reports/saved`：查看已保存 report
+- `/reports/session/<session_id>`：单 session report preview
+- `/reports/multi?...`：多 session report preview
 
-## Notes
+## 注意事项
 
-- Empty sessions are not saved.
-- Completed sessions can generate reports.
-- In-progress sessions can be resumed and do not block starting a new session.
-- Report generation calls the configured report LLM; saving or reopening saved reports does not call the LLM again.
-- Docker runs in a container, so timezone is set with `TZ=Asia/Hong_Kong` by default and can be overridden with `-e TZ=<timezone>`.
+- 空 session 不保存。
+- 只有 completed sessions 可以生成 report。
+- 生成 report 会调用当前配置的 LLM。
+- 保存或重新打开已保存 report 不会再次调用 LLM。
+- 删除 saved report 不会修改原始 session。
+- 删除 session 不会自动删除已经保存的 report。
+- Docker 时区可通过 `-e TZ=<timezone>` 修改。
 
-## Documentation
+## 相关文档
 
-- [RUNNING.md](RUNNING.md): user-facing run guide in English and Chinese
-- [README_DEV.md](README_DEV.md): longer project notes and implementation details
-- [demonstration.md](demonstration.md): current work record and demo notes
+- [README.md](README.md)：英文项目说明
+- [RUNNING.md](RUNNING.md)：中英文运行指南
+- [README_DEV.md](README_DEV.md)：更详细的开发说明
+- [demonstration.md](demonstration.md)：当前实现和 demo 记录

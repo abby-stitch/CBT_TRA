@@ -118,3 +118,23 @@ Source-grounded example: "I should never make mistakes."
 Definition: Seeing only the negative side of a situation and leaving out neutral or positive aspects.
 Source-grounded example: "Everything about this situation is bad."
 """
+
+    @staticmethod
+    def get_distortion_items() -> list[dict[str, str]]:
+        import re
+
+        text = DistortionKnowledge.get_full_distortions()
+        pattern = re.compile(
+            r"\n\d+\.\s+(?P<label>[^\n]+)\n"
+            r"Definition:\s+(?P<definition>[^\n]+)\n"
+            r"Source-grounded example:\s+\"(?P<example>[^\"]+)\"",
+            re.MULTILINE,
+        )
+        return [
+            {
+                "label": match.group("label").strip(),
+                "definition": match.group("definition").strip(),
+                "example": match.group("example").strip(),
+            }
+            for match in pattern.finditer(text)
+        ]

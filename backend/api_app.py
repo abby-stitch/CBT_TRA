@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from backend import app_settings
 from backend.agent import CBTAgent
+from backend.knowledge_base import DistortionKnowledge
 from backend import report_service
 
 app = FastAPI(title="TRA Test API")
@@ -208,6 +209,11 @@ def health() -> dict[str, str]:
 @app.get("/api/settings", response_model=AppSettings)
 def get_settings() -> AppSettings:
     return AppSettings(**app_settings.load_settings())
+
+
+@app.get("/api/distortions")
+def list_distortions() -> dict[str, Any]:
+    return {"items": DistortionKnowledge.get_distortion_items()}
 
 
 @app.put("/api/settings", response_model=AppSettings)

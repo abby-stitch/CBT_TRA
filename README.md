@@ -18,9 +18,28 @@ CBT Thought Record helps users work through one emotionally significant situatio
 
 The project runs locally with either Ollama or an OpenAI-compatible API. Sessions and reports are stored as local JSON files.
 
+## Preview
+
+### Home
+
+![Home page](docs/screenshots/home.png)
+
+### Session
+
+![Thought record session](docs/screenshots/session.png)
+
+### Reports
+
+![Reports page](docs/screenshots/report.png)
+
 ## Quick Start
 
 For a detailed bilingual setup guide, see [RUNNING.md](RUNNING.md).
+
+There are two intended ways to use this project:
+
+- **Users** run the Docker image and use the app in the browser.
+- **Developers** clone the repository and run backend/frontend separately while editing code.
 
 ### 1. Install Docker and Ollama
 
@@ -56,6 +75,8 @@ Open:
 http://localhost:8000
 ```
 
+If a prebuilt image is published, users can skip `docker build` and replace `cbt-thought-record-agent` with the published image name in `docker run`.
+
 The Docker image defaults to local Ollama:
 
 ```text
@@ -71,9 +92,11 @@ URL: http://host.docker.internal:11434/api/generate
 - **Session archive**: completed, stopped, and in-progress sessions are listed locally.
 - **Resume support**: in-progress sessions can be resumed later.
 - **Report generation**: completed sessions can generate single-session or multi-session reports.
+- **Distortion overview**: the Reports page shows recorded cognitive distortions ranked by frequency.
 - **Saved reports**: saved reports can be reopened without calling the LLM again.
 - **Model settings**: switch between Ollama and API mode from the UI.
 - **Personal context**: optional user-provided background can be included in new sessions and report summaries.
+- **Distortion guide**: cognitive distortion definitions are available from the top-left book icon and inside Step 4.
 
 ## Running with an API
 
@@ -115,6 +138,8 @@ API key env var: OPENAI_API_KEY
 Other OpenAI-compatible providers can be used by replacing the URL with the provider's compatible base URL or full `/chat/completions` endpoint.
 
 ## Development
+
+Docker is not needed for local development. Run the backend and frontend in two terminals.
 
 Backend:
 
@@ -169,10 +194,12 @@ These files are ignored by git and should not be uploaded to GitHub. If example 
 backend/
   agent.py            Core CBT agent workflow
   api_app.py          FastAPI API and production frontend serving
+  knowledge_base.py   CBT step guidance and distortion definitions
   report_service.py   Report aggregation and LLM report synthesis
   storage.py          Session JSON persistence
 frontend/
   src/                React frontend
+  src/distortionGuide.ts  Static frontend distortion guide for instant Step 4 display
 Dockerfile            Single-image Docker build
 RUNNING.md            Bilingual end-user run guide
 README_CN.md          Chinese project overview

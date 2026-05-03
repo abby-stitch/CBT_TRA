@@ -2,6 +2,7 @@ import type {
   AppSettings,
   DeleteReportResponse,
   DeleteSessionResponse,
+  DistortionGuideResponse,
   MessageResponse,
   Report,
   ReportSessionsResponse,
@@ -116,4 +117,8 @@ export function updateSettings(settings: AppSettings): Promise<AppSettings> {
     method: "PUT",
     body: JSON.stringify(settings)
   });
+}
+
+export function listDistortions(): Promise<DistortionGuideResponse> {
+  return requestJson<DistortionGuideResponse>("/api/distortions");
 }

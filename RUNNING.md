@@ -187,9 +187,11 @@ For non-OpenAI providers, replace the URL with that provider's OpenAI-compatible
 - Session Archive: review completed, stopped, and in-progress sessions.
 - Resume Session: click an in-progress session to continue it later.
 - Reports: generate single-session or multi-session reports from completed sessions.
+- Distortion Overview: view cognitive distortion counts across completed sessions on the Reports page.
 - Saved Reports: reopen saved reports without regenerating LLM content.
 - Settings: switch between Ollama and API, edit model name, URL, data folders, and API key env var.
 - Personal Context: add optional background context for new sessions and reports.
+- Distortion Guide: open cognitive distortion definitions from the top-left book link or during Step 4.
 
 ### 8. Troubleshooting
 
@@ -401,9 +403,11 @@ API key env var: OPENAI_API_KEY
 - Session Archive：查看 completed、stopped 和 in-progress sessions。
 - Resume Session：点击未完成 session 可以继续之前的对话。
 - Reports：基于 completed sessions 生成单 session 或多 session 报告。
+- Distortion Overview：在 Reports 页面查看 completed sessions 中 cognitive distortions 的出现次数统计。
 - Saved Reports：查看已经保存的报告，不重新调用 LLM。
 - Settings：切换 Ollama / API，修改模型名、URL、数据目录和 API key 环境变量名。
 - Personal Context：填写可选个人背景，用于新 session 和 report summary。
+- Distortion Guide：可以从左上角书本入口或 Step 4 对话气泡中查看 cognitive distortion 定义。
 
 ### 8. 常见问题
 

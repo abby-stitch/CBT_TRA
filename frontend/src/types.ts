@@ -72,6 +72,16 @@ export type LlmMetadata = {
   api_key_env_var?: string;
 };
 
+export type DistortionGuideItem = {
+  label: string;
+  definition: string;
+  example: string;
+};
+
+export type DistortionGuideResponse = {
+  items: DistortionGuideItem[];
+};
+
 export type SessionArchiveItem = ReportSession & {
   last_updated?: string;
   current_step?: number;

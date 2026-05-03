@@ -28,6 +28,7 @@
 - settings 页面，用于切换模型、API 地址、保存路径和个人背景信息
 - safety check，用于识别 self-harm / suicide 相关风险语言
 - 一个轻量 RAG/knowledge-base 模块，用静态 CBT knowledge snippets 辅助 thought-record steps，尤其是 Step 4 cognitive distortions 和 Step 5 balanced thought
+- Step 4 conversation 页面提供可展开的 cognitive distortion guide，展示每个 label 的简短定义和例子
 
 需要注意：proposal 中提到 Hugging Face CBT-Bench、C2D2 Dataset。当前代码并没有真正接入这些外部数据集，也没有实现向量数据库检索；目前的 RAG 更准确地说是基于 `backend/knowledge_base.py` 的静态知识库注入。
 
@@ -369,6 +370,10 @@ current_step
 
 Step 4 会把 cognitive distortion guidance 注入 prompt，让 LLM 只能从这些 label 中选择 distortion。由于 cognitive distortions 的边界本身可能重叠，系统设计上把模型输出视为 tentative suggestions；正式 `distortions` 字段应来自用户选择、接受或确认，而不是模型单方面诊断。
 
+`frontend/src/distortionGuide.ts`
+
+前端 Step 4 的 cognitive distortion guide。为了避免 conversation 页面在 Step 4 额外等待 API 请求，这里单独保存 12 个 distortion 的简短定义和例子，并直接随前端 bundle 加载。用户在 Step 4 的 assistant 气泡中点击 guide 时会立即展开。
+
 `backend/safety.py`
 
 安全检测逻辑。它会先调用 LLM 做 semantic safety check，要求返回：
@@ -424,6 +429,7 @@ Terminal 版本入口。运行后会启动一个命令行 thought record session
 主要接口：
 
 - `GET /api/health`
+- `GET /api/distortions`
 - `GET /api/settings`
 - `PUT /api/settings`
 - `POST /api/start`
@@ -850,6 +856,10 @@ uv run python -m backend.report_cli generate --mode recent --limit 5 --print-jso
 ```json
 {"status":"ok"}
 ```
+
+### `GET /api/distortions`
+
+读取 cognitive distortion guide。返回 12 个 Beck-style worksheet labels，每个条目包含 `label`、`definition` 和 `example`。这个接口只读取 `backend/knowledge_base.py`，不会调用 LLM。当前 conversation UI 为了避免 Step 4 loading，使用 `frontend/src/distortionGuide.ts` 中的静态副本即时展示；该 API 保留用于调试或后续统一来源。
 
 ### `GET /api/settings`
 

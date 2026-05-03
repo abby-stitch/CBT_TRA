@@ -16,7 +16,8 @@ import {
   startSession,
   updateSettings
 } from "./api";
-import type { AppSettings, ChatMessage, LlmMetadata, Report, ReportItem, ReportSession, SavedReportSummary, SessionArchiveItem, SessionDetail } from "./types";
+import { DISTORTION_GUIDE_ITEMS } from "./distortionGuide";
+import type { AppSettings, ChatMessage, DistortionGuideItem, LlmMetadata, Report, ReportItem, ReportSession, SavedReportSummary, SessionArchiveItem, SessionDetail } from "./types";
 
 function makeMessage(role: ChatMessage["role"], text: string): ChatMessage {
   return {
@@ -196,9 +197,24 @@ function newestFirst<T extends { date?: string; session_id?: string }>(items: T[
   });
 }
 
+function distortionStats(items: ReportSession[]) {
+  const counts = new Map<string, number>();
+  items.forEach((item) => {
+    (item.distortions || []).forEach((label) => {
+      const normalized = String(label || "").trim();
+      if (!normalized) return;
+      counts.set(normalized, (counts.get(normalized) || 0) + 1);
+    });
+  });
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
 function AppFrame({ children, active = "welcome" }: { children: React.ReactNode; active?: "welcome" | "session" | "reports" }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isDistortionGuideOpen, setIsDistortionGuideOpen] = useState(false);
   const [activeSettings, setActiveSettings] = useState<AppSettings | null>(null);
 
   useEffect(() => {
@@ -223,9 +239,15 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
 
       <nav className="nav">
         <div className="nav-inner">
-          <a className="brand" href="/">
-            CBT Thought Record
-          </a>
+          <div className="brand-stack">
+            <a className="brand" href="/">
+              CBT Thought Record
+            </a>
+            <button className="brand-sub-link" type="button" onClick={() => setIsDistortionGuideOpen(true)}>
+              <span className="material-symbols-outlined small-icon">menu_book</span>
+              Cognitive distortion definitions
+            </button>
+          </div>
           <div className="nav-links">
             <a className={active === "welcome" ? "active" : ""} href="/">
               Home
@@ -255,6 +277,7 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
       <main className="wrap">{children}</main>
       {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} onSaved={setActiveSettings} />}
       {isProfileOpen && <ProfileDialog onClose={() => setIsProfileOpen(false)} />}
+      {isDistortionGuideOpen && <DistortionGuideDialog onClose={() => setIsDistortionGuideOpen(false)} />}
     </div>
   );
 }
@@ -325,9 +348,40 @@ function LearnThoughtRecordDialog({ onClose }: { onClose: () => void }) {
               Beck Institute CBT: Basics and Beyond resources
             </a>
             <a href="https://cares.beckinstitute.org/wp-content/uploads/sites/2/2021/06/Coping-with-Depression.pdf" target="_blank" rel="noreferrer">
-              Beck Institute Cares Coping with Depression
+              Beck Institute Cares Coping with Depression, including thinking errors definitions
             </a>
           </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DistortionGuideDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Cognitive distortion definitions">
+      <section className="settings-modal distortion-modal">
+        <div className="settings-head">
+          <div>
+            <div className="eyebrow">Cognitive Distortions</div>
+            <h2>Definitions used in this thought record</h2>
+          </div>
+          <button className="icon-btn" type="button" aria-label="Close cognitive distortion guide" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <p className="modal-intro">
+          These labels are based on Beck Institute CBT worksheet resources and describe possible patterns in a specific automatic thought.
+          They are used for self-reflection, not diagnosis.
+        </p>
+        <div className="distortion-guide-grid modal-guide-grid">
+          {DISTORTION_GUIDE_ITEMS.map((item) => (
+            <article className="distortion-guide-item" key={item.label}>
+              <strong>{item.label}</strong>
+              <p>{item.definition}</p>
+              <span>{item.example}</span>
+            </article>
+          ))}
         </div>
       </section>
     </div>
@@ -533,6 +587,8 @@ function ThoughtRecordConversation({
   logRef: React.RefObject<HTMLDivElement | null>;
   onSend: () => Promise<void>;
 }) {
+  const showDistortionGuide = currentStep === 4;
+
   return (
     <AppFrame active="session">
       <div className="conversation-shell">
@@ -570,15 +626,25 @@ function ThoughtRecordConversation({
           <div>
             <div className="chat">
               <div className="log" ref={logRef}>
-                {messages.map((message) => (
-                  <div className={`msg ${message.role}`} key={message.id}>
+                {messages.map((message) => {
+                  const shouldShowGuide =
+                    showDistortionGuide && message.role === "assistant" && message.id === messages[messages.length - 1]?.id;
+                  return (
+                    <div className={`msg ${message.role}`} key={message.id}>
                     {message.role === "assistant" && (
                       <div className={`avatar ${message.role}`}>
                         <span className="material-symbols-outlined filled">spa</span>
                       </div>
                     )}
                     <div className="bubble-wrap">
-                      <div className="bubble">{message.text}</div>
+                      <div className="bubble">
+                        <span>{message.text}</span>
+                        {shouldShowGuide && (
+                          <DistortionGuide
+                            items={DISTORTION_GUIDE_ITEMS}
+                          />
+                        )}
+                      </div>
                       {isSessionComplete && recordUrl && message.role === "assistant" && message.id === messages[messages.length - 1]?.id && (
                         <div className="summary-review-card">
                           <div>
@@ -599,7 +665,8 @@ function ThoughtRecordConversation({
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -639,6 +706,27 @@ function ThoughtRecordConversation({
 
       </div>
     </AppFrame>
+  );
+}
+
+function DistortionGuide({ items }: { items: DistortionGuideItem[] }) {
+  return (
+    <details className="distortion-guide">
+      <summary>
+        <span className="material-symbols-outlined small-icon">help</span>
+        Cognitive distortion guide
+        <span className="material-symbols-outlined disclosure-icon">expand_more</span>
+      </summary>
+      <div className="distortion-guide-grid">
+        {items.map((item) => (
+          <article className="distortion-guide-item" key={item.label}>
+            <strong>{item.label}</strong>
+            <p>{item.definition}</p>
+            <span>{item.example}</span>
+          </article>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -785,8 +873,7 @@ function HomePage() {
           </a>
         </div>
         <p className="start-note">
-          If the experience lasted a while, begin with the most intense part: before, during, or after it happened.
-          You do not need to know exactly what to write.
+          Pick one specific intense moment. You do not need to know exactly what to write.
         </p>
       </section>
       {isLearnOpen && <LearnThoughtRecordDialog onClose={() => setIsLearnOpen(false)} />}
@@ -1285,32 +1372,29 @@ function SessionsPage() {
 
 function ReportsHomePage() {
   const [sessions, setSessions] = useState<ReportSession[]>([]);
-  const [savedReports, setSavedReports] = useState<SavedReportSummary[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [recentLimit, setRecentLimit] = useState(3);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSaved, setIsLoadingSaved] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savedError, setSavedError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadReportData() {
       try {
-        const [sessionData, reportData] = await Promise.all([listReportSessions(), listSavedReports()]);
+        const sessionData = await listReportSessions();
         setSessions(sessionData.items || []);
-        setSavedReports(reportData.items || []);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load report data.";
         setError(message);
-        setSavedError(message);
       } finally {
         setIsLoading(false);
-        setIsLoadingSaved(false);
       }
     }
 
     void loadReportData();
   }, []);
+
+  const rankedDistortions = useMemo(() => distortionStats(sessions), [sessions]);
+  const maxDistortionCount = rankedDistortions[0]?.count || 0;
 
   function toggleSession(sessionId: string) {
     setSelectedIds((current) => (current.includes(sessionId) ? current.filter((id) => id !== sessionId) : [...current, sessionId]));
@@ -1368,37 +1452,30 @@ function ReportsHomePage() {
             </div>
           </div>
 
-          <details className="report-panel saved-report-disclosure">
-            <summary>
-              <span className="summary-title">
-                <span className="material-symbols-outlined disclosure-icon">expand_more</span>
-                <span>Saved Reports</span>
-              </span>
-              <em>{savedReports.length ? `${savedReports.length} saved reports` : "Click to expand"}</em>
-            </summary>
-            <div className="hint">Open a saved report without regenerating the synthesis.</div>
-            {savedError && <div className="empty">{savedError}</div>}
-            {isLoadingSaved && <div className="empty">Loading saved reports...</div>}
-            {!isLoadingSaved && !savedReports.length && <div className="empty">No saved reports yet.</div>}
-            <div className="saved-report-list">
-              {savedReports.slice(0, 6).map((item) => (
-                <a className="saved-report-row" href={`/reports/${item.report_id}`} key={item.report_id}>
-                  <div>
-                    <strong>{savedReportTitle(item)}</strong>
-                    <span>{savedReportSummary(item)}</span>
+          <div className="report-panel distortion-overview-panel">
+            <div className="section-title">Distortion Overview</div>
+            <div className="hint">Counts across completed sessions. Only recorded labels are shown.</div>
+            {isLoading && <div className="empty">Loading distortion overview...</div>}
+            {!isLoading && !rankedDistortions.length && <div className="empty">No recorded distortions yet.</div>}
+            {!!rankedDistortions.length && (
+              <div className="distortion-ranking">
+                {rankedDistortions.map((item, idx) => (
+                  <div className="distortion-rank-row" key={item.label}>
+                    <span className="distortion-rank-index">{idx + 1}</span>
+                    <div className="distortion-rank-main">
+                      <div className="distortion-rank-top">
+                        <strong>{item.label}</strong>
+                        <em>{item.count}</em>
+                      </div>
+                      <div className="distortion-rank-bar" aria-hidden="true">
+                        <span style={{ width: `${Math.max(8, (item.count / maxDistortionCount) * 100)}%` }}></span>
+                      </div>
+                    </div>
                   </div>
-                  <em>{item.generated_at || "Saved"}</em>
-                </a>
-              ))}
-            </div>
-            {!!savedReports.length && (
-              <div className="controls">
-                <a className="button" href="/reports/saved">
-                  View All Saved Reports
-                </a>
+                ))}
               </div>
             )}
-          </details>
+          </div>
         </div>
 
         <div className="report-panel">
