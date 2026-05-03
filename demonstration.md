@@ -50,16 +50,21 @@ Reference links / 参考链接:
 
 - Profile / personal context 已接入。用户可以在首页右上角人像按钮中填写个人背景，这些内容会作为新 conversation 和 report summary 的上下文，但不是自动 memory。
 - Session archive 已接入。顶部 `Session` 导航进入 `/sessions`，展示本地已保存且有用户输入的 sessions，分页展示，每页约 10 条。
+- 可以同时存在多个 `in_progress` session。离开当前对话不会结束 session，也不会阻止用户开始新的 session；未完成记录可以之后从 archive 点进去继续。
 - Session 详情只展示 thought record 字段，不展示 conversation transcript；`in_progress` session 可以从 archive 恢复继续，`completed` / `stopped` session 可以查看结构化记录。
 - Session archive 支持删除本地 session JSON。删除 session 不会自动删除已经保存过的 report。
 - 空 session 不会保存。只有用户发送消息后，session 才会写入本地 JSON。
+- 完成 session 后，`View Thought Record` 只显示在最后一条 assistant summary 下方的完成卡片中；页面底部不再额外显示重复入口。
+- Conversation 页面聊天框高度已加长，方便显示较长的最终 summary。
+- 浏览器 title 和页面 brand 统一为 `CBT Thought Record`。
 - Report 页面只保留 Stitch 风格版本。
 - Single-session 和 multi-session report 都有专门的 LLM summary/action-items prompt。
 - 报告生成与保存已经分离。生成报告会调用 LLM；保存、查看已保存报告、删除报告都不会调用 LLM。
 - 已保存 report 可以在页面删除。删除只影响 `reports/report_<report_id>.json`，不会改变任何 `sessions/session_<session_id>.json`。
 - Multi-session report 中点击单个 session 会回到 session archive 查看原始 thought record，不会生成新的 single-session report。
 - Multi-session report 的强度对比颜色已调整：调整前为浅红色，调整后为浅绿色。
-- Conversation 使用的 LLM 会写入 session JSON 的 `conversation_llm`，report 生成使用的 LLM 会写入 report JSON 的 `report_llm`，前端会显示实际模型名称。
+- Conversation 使用的 LLM 会写入 session JSON 的 `conversation_llm`，report 生成使用的 LLM 会写入 report JSON 的 `report_llm`，前端会显示实际模型名称。继续旧的 `in_progress` session 时会使用当前 settings 中的 conversation 模型，而不是被旧 session 里保存的旧 API/模型锁住；继续发送一轮后，session JSON 会保存新的实际模型信息。
+- Settings 里的 Provider 只保留 `Ollama` 和 `API` 两项。选择 `Ollama` 会自动填入 `http://localhost:11434/api/generate`；选择 `API` 会自动填入 `https://api.openai.com/v1`，用户仍可手动改成火山引擎、阿里云百炼等 OpenAI-compatible URL。
 - OpenAI-compatible API key 推荐放在项目根目录 `.env` 文件中；`.env` 不提交 git，`.env.example` 提供示例。
 
 ## 2. 当前系统架构
@@ -271,7 +276,7 @@ Python 项目配置。当前项目要求 Python `>=3.12`，依赖包括：
 ```python
 LLM_PROVIDER = "ollama"
 LLM_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "gemma3:27b"
+LLM_MODEL = "gemma2:9b"
 API_KEY_ENV_VAR = "OPENAI_API_KEY"
 SESSIONS_DIR = "<project_root>/sessions"
 REPORTS_DIR = "<project_root>/reports"
@@ -584,14 +589,14 @@ pip install -e .
 ```python
 LLM_PROVIDER = "ollama"
 LLM_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "gemma3:27b"
+LLM_MODEL = "gemma2:9b"
 ```
 
 先启动 Ollama 并下载模型：
 
 ```bash
 ollama serve
-ollama pull gemma3:27b
+ollama pull gemma2:9b
 ```
 
 如果想换模型，例如 `qwen2.5:7b`：
@@ -725,7 +730,8 @@ http://127.0.0.1:5173/
 4. Agent 会一步步引导你填写 situation、emotion、automatic thought、evidence、distortion、balanced thought 等内容
 5. 用户发送第一条消息后开始保存本地 session JSON；完全空的 session 不会落盘
 6. 完成 Step 7 后，页面会出现 `View Thought Record`
-7. 点击后进入 session archive 中的 thought record 详情页，不会生成报告，也不会调用 LLM
+7. `View Thought Record` 显示在最后一条 assistant summary 下方的完成卡片中；页面底部不再额外显示重复入口
+8. 点击后进入 session archive 中的 thought record 详情页，不会生成报告，也不会调用 LLM
 
 ### 8.4 Session Archive 页面
 
@@ -739,8 +745,11 @@ http://127.0.0.1:5173/sessions
 
 - 展示本地已保存且有用户输入的 session，包括 `completed`、`in_progress` 和 `stopped`
 - 列表每页约 10 条
+- 允许多个 `in_progress` session 同时存在。离开当前 conversation 页面只表示返回列表或去其他页面，不会把 session 标记为 `completed` 或 `stopped`
+- 用户可以随时开始新的 session；旧的 `in_progress` session 会继续保留在 archive 中
 - 点击 `completed` 或 `stopped` session 后进入 thought record 详情
 - 点击 `in_progress` session 后会恢复到 conversation 页面继续完成
+- 恢复 `in_progress` session 时会使用当前 settings 中的 conversation 模型/API。这样如果旧 session 原本使用的 API 后来不可用，用户切换到可用模型后仍然可以继续完成；继续发送一轮后，session JSON 中的 `conversation_llm` 会更新为新的实际模型
 - 详情只展示结构化 thought record 字段，不展示 conversation transcript
 - 详情页里的 `Generate Report` 只对 `completed` session 显示，点击后才会进入单 session report 生成页面并调用 LLM
 - Session archive 支持删除本地 session JSON；删除 session 不会自动删除已经保存的 report
@@ -852,7 +861,7 @@ uv run python -m backend.report_cli generate --mode recent --limit 5 --print-jso
 
 ### `POST /api/start`
 
-创建新 session。
+创建新 session。当前允许同时存在多个 `in_progress` session；如果已有未完成 session，`/api/start` 不会返回 409，也不会自动结束旧 session。旧 session 会继续保存在本地 archive 中，用户之后可以恢复。
 
 返回：
 
@@ -909,6 +918,8 @@ uv run python -m backend.report_cli generate --mode recent --limit 5 --print-jso
 ### `POST /api/sessions/{session_id}/resume`
 
 从本地 session JSON 恢复一个 `in_progress` session，并返回当前对话状态。前端点击进行中的 session 时会使用这个接口回到 conversation 页面继续。
+
+恢复时会读取当前 settings 并用当前 conversation 模型/API 重建 agent，而不是强制沿用 session JSON 中旧的 `conversation_llm`。这样旧 API 不可用时，用户可以先在 settings 中切换到新的可用 provider/model，再继续旧 session。用户继续发送一轮后，新的实际模型信息会写回该 session 的 `conversation_llm`。
 
 ### `DELETE /api/sessions/{session_id}`
 
@@ -1016,6 +1027,8 @@ sessions/session_<session_id>.json
 
 Session archive 页面显示所有已经保存且有用户输入的 sessions。创建 session 但完全没有发送用户消息时，不会产生 session JSON 文件；如果 session 已保存但未完成，会保留为 `in_progress`，并可从 session archive 恢复继续。
 
+`conversation_llm` 表示这个 session 最近一次保存时使用的 conversation 模型。对于旧的 `in_progress` session，恢复对话时会改用当前 settings 中的模型/API，避免旧 API 失效后无法继续。恢复后如果用户发送新消息，session 会再次保存，此时 `conversation_llm` 会更新为新的实际模型信息。因此它不是完整的模型使用历史日志，而是最近一次保存时的模型快照。
+
 ### 11.2 Report JSON
 
 保存路径：
@@ -1067,7 +1080,7 @@ reports/report_<report_id>.json
 ```python
 LLM_PROVIDER = "ollama"
 LLM_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "gemma3:27b"
+LLM_MODEL = "gemma2:9b"
 ```
 
 方式二：打开网页右上角 settings，修改：
@@ -1079,7 +1092,14 @@ LLM_MODEL = "gemma3:27b"
 - Sessions path
 - Reports path
 
-网页 settings 会写入 `app_settings.json`，新 session 会使用更新后的配置。
+网页 settings 会写入 `app_settings.json`。新 session 会使用更新后的配置；恢复旧的 `in_progress` session 时，也会使用当前 settings 中的 conversation 模型/API。
+
+Provider 当前只保留两个选项：
+
+- `Ollama`：本地 Ollama。选择后会自动把 URL 填成 `http://localhost:11434/api/generate`
+- `API`：OpenAI-compatible API。选择后会自动把 URL 填成 `https://api.openai.com/v1`
+
+`API` 默认指向 OpenAI，但也可以手动改成火山引擎、阿里云百炼等兼容 OpenAI chat completions 格式的 URL。后端会把非 `/chat/completions` 结尾的 API URL 自动拼接为 `<LLM_URL>/chat/completions`。
 
 右上角人像按钮打开 personal context dialog。用户可以填写身份、性格、当前压力源、偏好的回复方式等背景信息。这不是长期 memory，也不会自动总结历史 session；它只是一个用户主动填写的 profile/context。当前它会用于：
 
@@ -1268,38 +1288,169 @@ I'm nervous now, but I can practice more and I have handled nervous conversation
 9. 打开 `/reports`，选择 recent 或 custom，生成多 session report。多 session report 中点击单个 session 会回到 session archive，而不是生成新的 single report。
 10. 点击 `Save Report` 保存当前 report，再到 `/reports/saved` 查看或删除保存的 report。
 
-## 15. 打包前检查与建议
+## 15. 打包方式
 
-当前仓库还没有正式的 `Dockerfile` 或 `docker-compose.yml`。如果要以 demonstration 为基础打包，建议先按下面顺序整理：
+当前仓库已经加入单 Docker 镜像打包方式：
 
-1. 确认本地直接运行稳定：
+- `Dockerfile`
+- `.dockerignore`
+- `backend/api_app.py` 中的 React build 静态托管逻辑
+- `Dockerfile` 中的 Docker 专用默认 LLM 配置
 
-```bash
-uv sync
-uv run uvicorn backend.api_app:app --reload --port 8000
-cd frontend
-npm install
-npm run dev
+Docker 镜像内会先构建 React 前端，然后由同一个 FastAPI 进程同时提供后端 API 和前端页面：
+
+```text
+http://localhost:8000/api/...    -> FastAPI API
+http://localhost:8000/           -> React app
+http://localhost:8000/sessions   -> React app
+http://localhost:8000/reports    -> React app
 ```
 
-2. 确认 `.env`、`app_settings.json`、`sessions/session_*.json`、`reports/report_*.json` 没有被提交。真实 API key、个人 profile、测试 session 和 report 都应该留在本地。
+本地开发仍然使用 `backend/config.py` 的普通默认值：
 
-3. 如果使用 Ollama，打包说明里需要提醒使用者单独安装 Ollama 并提前 pull 模型，例如：
+```text
+http://localhost:11434/api/generate
+```
+
+Docker 镜像则通过 `Dockerfile` 的 `ENV` 设置 Docker 专用默认值：
+
+```text
+TZ=Asia/Hong_Kong
+LLM_PROVIDER=ollama
+LLM_MODEL=gemma2:9b
+LLM_URL=http://host.docker.internal:11434/api/generate
+```
+
+因此，用户只要本机安装 Ollama 并下载 `gemma2:9b`，运行 Docker image 后默认就可以连接本机 Ollama，不需要先改代码。Docker 默认时区设为 `Asia/Hong_Kong`，用于让 session `last_updated` 和 report `generated_at` 等时间与本地展示一致；如果部署到其他时区，可以运行容器时用 `-e TZ=<timezone>` 覆盖。
+
+### 15.1 构建镜像
+
+```bash
+docker build --no-cache -t cbt-thought-record-agent .
+```
+
+### 15.2 最小运行
+
+```bash
+docker run --rm \
+  -p 8000:8000 \
+  -e TZ=Asia/Hong_Kong \
+  cbt-thought-record-agent
+```
+
+打开：
+
+```text
+http://localhost:8000
+```
+
+### 15.3 推荐运行：保存本地数据
+
+为了避免容器删除后丢失记录，推荐把 `sessions/` 和 `reports/` 挂载到本机：
+
+```bash
+mkdir -p sessions reports
+docker run --rm \
+  -p 8000:8000 \
+  -e TZ=Asia/Hong_Kong \
+  -v "$PWD/sessions:/app/sessions" \
+  -v "$PWD/reports:/app/reports" \
+  cbt-thought-record-agent
+```
+
+如果还希望页面 settings 也能持久保存，可以额外挂载 `app_settings.json`：
+
+```bash
+touch app_settings.json
+docker run --rm \
+  -p 8000:8000 \
+  -e TZ=Asia/Hong_Kong \
+  -v "$PWD/app_settings.json:/app/app_settings.json" \
+  -v "$PWD/sessions:/app/sessions" \
+  -v "$PWD/reports:/app/reports" \
+  cbt-thought-record-agent
+```
+
+### 15.4 使用 OpenAI-compatible API
+
+复制 `.env.example`：
+
+```bash
+cp .env.example .env
+```
+
+在 `.env` 中填写：
+
+```text
+OPENAI_API_KEY=your_real_api_key
+```
+
+运行：
+
+```bash
+mkdir -p sessions reports
+docker run --rm \
+  -p 8000:8000 \
+  -e TZ=Asia/Hong_Kong \
+  --env-file .env \
+  -v "$PWD/sessions:/app/sessions" \
+  -v "$PWD/reports:/app/reports" \
+  cbt-thought-record-agent
+```
+
+`-e TZ=Asia/Hong_Kong` 会显式告诉容器使用香港时区。Dockerfile 里已经设置了同样的默认值，所以这行不是必须的，但建议保留在运行命令里，方便迁移到其他地区时改成对应时区，例如 `-e TZ=Europe/London`。
+
+页面 settings 中选择：
+
+```text
+Provider: API
+API / Ollama URL: https://api.openai.com/v1
+Model: <model name>
+API key env var: OPENAI_API_KEY
+```
+
+如果使用火山引擎、阿里云百炼等 OpenAI-compatible 服务，把 `API / Ollama URL` 改成对应服务的 base URL 或完整 `/chat/completions` URL 即可。后端请求格式统一使用 OpenAI chat completions 兼容格式，并从 `API key env var` 指定的环境变量读取 key。
+
+### 15.5 使用本机 Ollama
+
+本项目不会把 Ollama 或模型打进 Docker 镜像。用户需要在本机安装 Ollama 并下载模型：
 
 ```bash
 ollama pull gemma2:9b
 ```
 
-4. 如果使用 OpenAI-compatible API，使用者需要复制 `.env.example` 为 `.env`，填写 `OPENAI_API_KEY`，然后在页面 settings 里选择 `openai_compatible` provider 和模型名。
+Docker 镜像已经默认使用：
 
-5. 如果下一步做 Docker，建议使用 `docker-compose.yml` 管理：
+```text
+http://host.docker.internal:11434/api/generate
+```
 
-- backend container：运行 FastAPI，暴露 `8000`
-- frontend container 或静态构建：React build 后由 nginx 或后端静态服务托管
-- volume：把 `sessions/` 和 `reports/` 挂载出来，避免容器重建后数据丢失
-- `.env`：通过 compose 的 env file 或 environment 注入，不写进镜像
+如果用户在 settings 中手动改 URL，不要填：
 
-6. 当前页面 settings 会写 `app_settings.json`。如果是给别人使用，推荐不要随项目提交这个文件，让每台电脑首次启动时使用默认配置，然后用户在页面里修改 provider、model、路径和 profile。
+```text
+http://localhost:11434/api/generate
+```
+
+因为容器里的 `localhost` 指的是容器自己，不是用户电脑。
+
+Linux 如果无法识别 `host.docker.internal`，运行容器时需要加：
+
+```bash
+--add-host=host.docker.internal:host-gateway
+```
+
+### 15.6 GitHub 上传注意
+
+可以上传源码和打包文件，但不要上传用户私有数据：
+
+- 不上传 `.env`
+- 不上传 `app_settings.json`
+- 不上传 `sessions/session_*.json`
+- 不上传 `reports/report_*.json`
+- 不上传 `frontend/node_modules/`
+- 不上传 `frontend/dist/`
+
+这些已经在 `.gitignore` 和 `.dockerignore` 中处理。GitHub 上保留 `.env.example`，方便别人知道需要配置哪些环境变量。
 
 ## 16. 当前限制和后续改进方向
 
@@ -1308,7 +1459,7 @@ ollama pull gemma2:9b
 - 没有真正接入外部 CBT-Bench / C2D2 数据集
 - 没有向量数据库或 embedding retrieval
 - LLM 输出 JSON 解析依赖正则提取第一个 `{...}`，复杂错误输出时可能失败
-- `in_progress` session 已经可以从本地 JSON 恢复继续，但恢复逻辑仍然比较轻量，后续可以增加更严格的状态校验和冲突处理
+- 允许多个 `in_progress` session 同时存在，并可从本地 JSON 恢复继续。当前恢复时会使用当前 settings 的模型/API；如果后续需要精确审计每一轮使用的模型，还需要在 `turns` 中增加 per-turn LLM metadata，而不是只依赖 session 顶层的 `conversation_llm`
 - Personal context 不是自动 memory，不会自动从历史 session 中学习或更新用户画像
 - 前端没有自动化测试
 - 项目没有完整单元测试或端到端测试

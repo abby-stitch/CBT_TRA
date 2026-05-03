@@ -7,6 +7,8 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -20,6 +22,7 @@ from backend.agent import CBTAgent
 from backend import report_service
 
 app = FastAPI(title="TRA Test API")
+FRONTEND_DIST = PROJECT_ROOT / "frontend_dist"
 
 app.add_middleware(
     CORSMiddleware,
@@ -122,15 +125,15 @@ class AppSettingsUpdate(BaseModel):
     user_context: str | None = None
 
 
-def _agent_from_session_data(session_data: dict[str, Any], session_id: str) -> CBTAgent:
+def _agent_from_session_data(session_data: dict[str, Any], session_id: str, *, use_saved_llm: bool = True) -> CBTAgent:
     llm_meta = session_data.get("conversation_llm") or {}
     agent = CBTAgent(
         step=int(session_data.get("current_step") or 1),
         initial_record=session_data.get("thought_record") or None,
-        model=llm_meta.get("model") or None,
-        url=llm_meta.get("url") or None,
-        llm_provider=llm_meta.get("provider") or None,
-        api_key_env_var=llm_meta.get("api_key_env_var") or None,
+        model=llm_meta.get("model") if use_saved_llm else None,
+        url=llm_meta.get("url") if use_saved_llm else None,
+        llm_provider=llm_meta.get("provider") if use_saved_llm else None,
+        api_key_env_var=llm_meta.get("api_key_env_var") if use_saved_llm else None,
         user_context=session_data.get("user_context") or "",
     )
     agent.session_id = str(session_data.get("session_id") or session_id)
@@ -140,6 +143,43 @@ def _agent_from_session_data(session_data: dict[str, Any], session_id: str) -> C
     agent.safety_state = str(session_data.get("safety_state") or "normal")
     agent.safety_reason = session_data.get("safety_reason")
     agent.last_safety_warning_turn = int(session_data.get("last_safety_warning_turn") or 0)
+    return agent
+
+
+def _session_id_exists(session_id: str) -> bool:
+    if session_id in _agents:
+        return True
+    try:
+        report_service.load_session(session_id)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _ensure_unique_session_id(agent: CBTAgent) -> None:
+    base_id = agent.session_id
+    suffix = 2
+    while _session_id_exists(agent.session_id):
+        agent.session_id = f"{base_id}_{suffix}"
+        suffix += 1
+
+
+def _get_or_restore_in_progress_agent(session_id: str) -> CBTAgent | None:
+    agent = _agents.get(session_id)
+    if agent is not None:
+        return agent
+
+    try:
+        session_data = report_service.load_session(session_id)
+    except FileNotFoundError:
+        return None
+
+    if session_data.get("session_status") != "in_progress":
+        return None
+
+    app_settings.load_settings()
+    agent = _agent_from_session_data(session_data, session_id, use_saved_llm=False)
+    _agents[agent.session_id] = agent
     return agent
 
 
@@ -178,18 +218,9 @@ def update_settings(req: AppSettingsUpdate) -> AppSettings:
 @app.post("/api/start", response_model=StartResponse)
 def start() -> StartResponse:
     global _active_session_id
-    active_agent = _agents.get(_active_session_id or "")
-    if active_agent is not None:
-        _finalize_if_ready(active_agent)
-    if active_agent is not None and active_agent.session_status == "in_progress":
-        raise HTTPException(
-            status_code=409,
-            detail="A session is already in progress. Finish it before starting a new one.",
-        )
-    _active_session_id = None
-
     settings = app_settings.load_settings()
     agent = CBTAgent(step=1, user_context=settings.get("user_context") or "")
+    _ensure_unique_session_id(agent)
     first_msg = agent.respond(None)
     agent.chat_history.append({"role": "assistant", "content": first_msg})
     _agents[agent.session_id] = agent
@@ -205,7 +236,7 @@ def start() -> StartResponse:
 
 @app.post("/api/message", response_model=MessageResponse)
 def message(req: MessageRequest) -> MessageResponse:
-    agent = _agents.get(req.session_id)
+    agent = _get_or_restore_in_progress_agent(req.session_id)
     if agent is None:
         raise HTTPException(status_code=404, detail="Unknown session_id")
     if agent.session_status != "in_progress":
@@ -288,13 +319,6 @@ def get_session(session_id: str) -> dict[str, Any]:
 def resume_session(session_id: str) -> ResumeSessionResponse:
     global _active_session_id
     app_settings.load_settings()
-    active_agent = _agents.get(_active_session_id or "")
-    if active_agent is not None and active_agent.session_status == "in_progress" and active_agent.session_id != session_id:
-        raise HTTPException(
-            status_code=409,
-            detail="A different session is already in progress. Finish it before resuming another one.",
-        )
-
     try:
         session_data = report_service.load_session(session_id)
     except FileNotFoundError as exc:
@@ -303,7 +327,7 @@ def resume_session(session_id: str) -> ResumeSessionResponse:
     if session_data.get("session_status") != "in_progress":
         raise HTTPException(status_code=409, detail="Only in-progress sessions can be resumed.")
 
-    agent = _agent_from_session_data(session_data, session_id)
+    agent = _agent_from_session_data(session_data, session_id, use_saved_llm=False)
 
     _agents[agent.session_id] = agent
     if _finalize_if_ready(agent):
@@ -451,3 +475,32 @@ def delete_report(report_id: str) -> DeleteReportResponse:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Report not found.") from exc
     return DeleteReportResponse(ok=True, report_id=report_id)
+
+
+if FRONTEND_DIST.exists():
+    assets_dir = FRONTEND_DIST / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    def _frontend_index() -> FileResponse:
+        return FileResponse(
+            FRONTEND_DIST / "index.html",
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend(full_path: str) -> FileResponse:
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        requested_file = FRONTEND_DIST / full_path
+        if requested_file == FRONTEND_DIST / "index.html":
+            return _frontend_index()
+        if requested_file.is_file():
+            return FileResponse(requested_file)
+
+        return _frontend_index()

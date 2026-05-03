@@ -1,24 +1,72 @@
-__pycache__/
-*.py[cod]
-.venv/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.DS_Store
+# Default deny: ignore everything unless explicitly allowed below.
+*
 
-frontend/node_modules/
-frontend/dist/
+# Keep directory traversal possible.
+!*/
 
-app_settings.json
+# Project metadata and docs.
+!.gitignore
+!.dockerignore
+!.env.example
+!.python-version
+!README.md
+!README_DEV.md
+!RUNNING.md
+!demonstration.md
+!improvement.md
+!proposal.md
+!test.md
+!test_case.md
+!workflow design.md
+!pyproject.toml
+!uv.lock
+!Dockerfile
+
+# Backend source.
+!backend/
+!backend/**/*.py
+
+# Frontend source and config.
+!frontend/
+!frontend/index.html
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.node.json
+!frontend/vite.config.ts
+!frontend/src/
+!frontend/src/**/*.ts
+!frontend/src/**/*.tsx
+!frontend/src/**/*.css
+
+# Explicitly keep local/generated/private data ignored.
 .env
 .env.*
 !.env.example
+app_settings.json
+sessions/
+reports/
+chat_history.json
+thought_record.json
+google_stitch.html
 
-# Local user data and generated artifacts.
-sessions/session_*.json
-reports/report_*.json
+# Dependency, build, and cache outputs.
+.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+frontend/node_modules/
+frontend/dist/
+frontend_dist/
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 
-# Logs and temporary files.
+# OS/editor/temp files.
+.DS_Store
+.idea/
+.vscode/
 *.log
 tmp/
 temp/

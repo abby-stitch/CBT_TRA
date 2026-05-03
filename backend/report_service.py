@@ -339,6 +339,54 @@ def _report_summary_payload(report_type: str, items: list[dict[str, Any]], metri
     }
 
 
+def _parse_report_summary_json(raw: str) -> dict[str, Any] | None:
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.removeprefix("```json").removeprefix("```").strip()
+        if text.endswith("```"):
+            text = text[:-3].strip()
+
+    candidates = [text]
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end >= start:
+        candidates.append(text[start : end + 1])
+
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+            if isinstance(data, str):
+                data = json.loads(data)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            continue
+    return None
+
+
+def _clean_report_action_items(value: Any) -> list[str]:
+    out: list[str] = []
+
+    def collect(item: Any) -> None:
+        if len(out) >= 3:
+            return
+        if isinstance(item, str):
+            text = item.strip()
+            if text:
+                out.append(text)
+        elif isinstance(item, list):
+            for child in item:
+                collect(child)
+        elif isinstance(item, dict):
+            for key in ("text", "item", "action", "title"):
+                if key in item:
+                    collect(item.get(key))
+                    break
+
+    collect(value)
+    return out[:3]
+
+
 def _generate_llm_report_summary(
     *,
     report_type: str,
@@ -369,7 +417,10 @@ RULES:
 - For a single-session report, mention the main emotional shift, the automatic thought pattern, and one grounded next reflection focus.
 - For a multi-session report, mention recurring stressors, emotions, distortions, or balanced-thought progress only when supported by the data.
 - Action items must be gentle CBT practice suggestions based only on the report data. Do not give medical advice.
-- Output ONLY valid JSON, no markdown:
+- Output ONLY one raw valid JSON object. Do not wrap it in a string. Do not use markdown/code fences. Do not include any text before or after it.
+- The "synthesis" value must be plain human-readable prose, not JSON text.
+- The "action_items" value must be a flat array of exactly 3 strings, not nested arrays and not objects.
+Required shape:
 {{"synthesis":"one warm paragraph, 90-150 words","action_items":["short practical item 1","short practical item 2","short practical item 3"]}}
 """
     try:
@@ -390,20 +441,13 @@ RULES:
     if raw.startswith("Error:"):
         return None, [], raw
 
-    try:
-        start = raw.find("{")
-        end = raw.rfind("}")
-        if start >= 0 and end >= start:
-            data = json.loads(raw[start : end + 1])
-            synthesis = data.get("synthesis")
-            action_items = data.get("action_items") or []
-            if isinstance(action_items, str):
-                action_items = [action_items]
-            clean_items = [str(item).strip() for item in action_items if str(item).strip()][:3]
-            if isinstance(synthesis, str) and synthesis.strip():
-                return synthesis.strip(), clean_items, None
-    except Exception:
-        pass
+    data = _parse_report_summary_json(raw)
+    if data:
+        synthesis = data.get("synthesis") or data.get("summary") or data.get("llm_summary")
+        action_items = data.get("action_items") or data.get("actions") or []
+        clean_items = _clean_report_action_items(action_items)
+        if isinstance(synthesis, str) and synthesis.strip():
+            return synthesis.strip(), clean_items, None
 
     return raw, [], None
 

@@ -97,8 +97,58 @@ function savedReportSummary(item: SavedReportSummary) {
   return `${mode} · ${range}`;
 }
 
+function collectActionItems(value: unknown): string[] {
+  const out: string[] = [];
+  const visit = (item: unknown) => {
+    if (out.length >= 3) return;
+    if (typeof item === "string") {
+      const text = item.trim();
+      if (text) out.push(text);
+      return;
+    }
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    if (item && typeof item === "object") {
+      const record = item as Record<string, unknown>;
+      visit(record.text ?? record.item ?? record.action ?? record.title);
+    }
+  };
+  visit(value);
+  return out.slice(0, 3);
+}
+
+function parseGeneratedReportJson(value?: string | null) {
+  if (!value) return null;
+  let text = value.trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  const candidates = [text, start >= 0 && end >= start ? text.slice(start, end + 1) : ""].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      let data: unknown = JSON.parse(candidate);
+      if (typeof data === "string") data = JSON.parse(data);
+      if (data && typeof data === "object") {
+        const record = data as Record<string, unknown>;
+        const synthesis = typeof record.synthesis === "string" ? record.synthesis.trim() : typeof record.summary === "string" ? record.summary.trim() : "";
+        const actionItems = collectActionItems(record.action_items ?? record.actions);
+        if (synthesis || actionItems.length) return { synthesis, actionItems };
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return null;
+}
+
 function generatedReportText(report: Report) {
-  return report.llm_summary || (report.llm_error ? `Generated summary unavailable: ${report.llm_error}` : "No generated summary is available for this report.");
+  const parsed = parseGeneratedReportJson(report.llm_summary);
+  return parsed?.synthesis || report.llm_summary || (report.llm_error ? `Generated summary unavailable: ${report.llm_error}` : "No generated summary is available for this report.");
 }
 
 function defaultActionItems(report: Report) {
@@ -120,7 +170,8 @@ function defaultActionItems(report: Report) {
 
 function reportActionItems(report: Report) {
   const generated = report.llm_action_items || [];
-  return generated.length ? generated.slice(0, 3) : defaultActionItems(report);
+  const parsed = parseGeneratedReportJson(report.llm_summary);
+  return generated.length ? generated.slice(0, 3) : parsed?.actionItems.length ? parsed.actionItems : defaultActionItems(report);
 }
 
 function llmLabel(meta?: LlmMetadata | null) {
@@ -320,6 +371,11 @@ function useSettingsForm() {
 function SettingsDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: (settings: AppSettings) => void }) {
   const { settings, setField, saveSettings, status } = useSettingsForm();
 
+  function handleProviderChange(provider: string) {
+    setField("llm_provider", provider);
+    setField("llm_url", provider === "ollama" ? "http://localhost:11434/api/generate" : "https://api.openai.com/v1");
+  }
+
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = await saveSettings();
@@ -346,10 +402,12 @@ function SettingsDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: (
             <div className="settings-grid">
               <label>
                 Provider
-                <select value={settings.llm_provider} onChange={(event) => setField("llm_provider", event.target.value)}>
+                <select
+                  value={settings.llm_provider === "api" ? "openai_compatible" : settings.llm_provider}
+                  onChange={(event) => handleProviderChange(event.target.value)}
+                >
                   <option value="ollama">Ollama</option>
-                  <option value="openai_compatible">API (OpenAI-compatible)</option>
-                  <option value="api">API</option>
+                  <option value="openai_compatible">API</option>
                 </select>
               </label>
               <label>
@@ -376,8 +434,8 @@ function SettingsDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: (
 
             <p className="settings-note">
               Relative paths such as "sessions" and "reports" are resolved from the project root, so they work on another computer too.
-              Provider chooses whether requests go to Ollama or an API. Model is the model name sent to that provider. API keys are not
-              stored here; set the real key in your terminal environment.
+              Provider chooses local Ollama or an OpenAI-compatible API. The default API URL is OpenAI, but you can replace it with another
+              compatible provider URL. API keys are not stored here; set the real key in your terminal environment.
             </p>
             {status && <p className="settings-status">{status}</p>}
             <div className="settings-actions">
@@ -498,6 +556,14 @@ function ThoughtRecordConversation({
               <span>Conversation LLM: {llmLabel(llm)}</span>
             </div>
           </div>
+          {!isSessionComplete && (
+            <div className="conversation-actions">
+              <a className="button secondary" href="/sessions">
+                <span className="material-symbols-outlined small-icon">arrow_back</span>
+                Back to Sessions
+              </a>
+            </div>
+          )}
         </header>
 
         <div className="panel chat-panel-card">
@@ -571,17 +637,6 @@ function ThoughtRecordConversation({
 
         {error && !messages.some((message) => message.text === error) && <div className="error-banner">{error}</div>}
 
-        {isSessionComplete && recordUrl && (
-          <div className="completion-banner">
-            <div className="completion-copy">
-              Your thought record is ready to review. Open the full record to see the completed worksheet content.
-            </div>
-            <a className="btn-primary" href={sessionDetailUrl(sessionId)}>
-              <span className="material-symbols-outlined small-icon">description</span>
-              View Thought Record
-            </a>
-          </div>
-        )}
       </div>
     </AppFrame>
   );

@@ -548,7 +548,11 @@ TASK:
    - Self-judgment / interpretation / prediction belongs to "automatic_thought" (e.g., terrible, worthless, failure, "I'll never find a job", "Everyone else can").
    - "intensity_before"/"intensity_after": must be an explicit number from the user in the 0-100 range.
      Do NOT infer or estimate intensity from wording, tone, severity, or context.
-     If the user replies only \"55\", treat it as the missing intensity for the current step.
+     Natural hedged numeric replies still count when they contain an explicit rating, e.g. "maybe 50", "around 45 now", "about 35".
+     If CURRENT STEP is 1 and intensity_before is missing, store the user's explicit 0-100 rating in "intensity_before".
+     If CURRENT STEP is 6 and intensity_after is missing, store the user's explicit 0-100 rating in "intensity_after".
+     If the user replies only "55", treat it as the missing intensity for the current step.
+     Do NOT put a Step 6 rating into "intensity_before", and do NOT put a Step 1 rating into "intensity_after".
    - "distortions": MUST be names/labels of distortions, not questions.
    - "predicted_distortion": assistant-suggested distortion labels (store as a list).
    - "evidence_for"/"evidence_against": should be factual statements; output as a list when possible.

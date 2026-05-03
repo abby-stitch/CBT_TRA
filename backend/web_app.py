@@ -79,7 +79,7 @@ def index() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Quiet Sanctuary</title>
+  <title>CBT Thought Record</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
@@ -700,7 +700,7 @@ def index() -> str:
 
     <nav class="nav">
       <div class="nav-inner">
-        <div class="brand">The Quiet Sanctuary</div>
+        <div class="brand">CBT Thought Record</div>
         <div class="nav-links">
           <a href="/" class="active">Welcome</a>
           <a href="#" id="sessionLink">Session</a>
@@ -1320,7 +1320,7 @@ def _render_report_page(report: dict[str, Any]) -> str:
     <div class="ambient-left"></div>
     <nav class="nav">
       <div class="nav-inner">
-        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <a class="brand" href="/">CBT Thought Record</a>
         <div class="nav-links">
           <a href="/">Welcome</a>
           <a href="/">Session</a>
@@ -1408,7 +1408,7 @@ def _render_report_page(report: dict[str, Any]) -> str:
     <div class="ambient-left"></div>
     <nav class="nav">
       <div class="nav-inner">
-        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <a class="brand" href="/">CBT Thought Record</a>
         <div class="nav-links">
           <a href="/">Welcome</a>
           <a href="/">Session</a>
@@ -1480,7 +1480,7 @@ def reports_home_page() -> str:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Quiet Sanctuary | Reports</title>
+  <title>CBT Thought Record | Reports</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <style>
@@ -1546,7 +1546,7 @@ def reports_home_page() -> str:
     <div class="ambient-left"></div>
     <nav class="nav">
       <div class="nav-inner">
-        <a class="brand" href="/">The Quiet Sanctuary</a>
+        <a class="brand" href="/">CBT Thought Record</a>
         <div class="nav-links">
           <a href="/">Welcome</a>
           <a href="/">Session</a>
