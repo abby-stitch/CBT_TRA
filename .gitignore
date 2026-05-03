@@ -11,14 +11,8 @@
 !.python-version
 !README.md
 !README_CN.md
-!README_DEV.md
 !RUNNING.md
 !demonstration.md
-!improvement.md
-!proposal.md
-!test.md
-!test_case.md
-!workflow design.md
 !pyproject.toml
 !uv.lock
 !Dockerfile
@@ -45,34 +39,5 @@
 !frontend/src/**/*.tsx
 !frontend/src/**/*.css
 
-# Explicitly keep local/generated/private data ignored.
-.env
-.env.*
-!.env.example
-app_settings.json
-sessions/
-reports/
-chat_history.json
-thought_record.json
-google_stitch.html
-
-# Dependency, build, and cache outputs.
-.venv/
-__pycache__/
-**/__pycache__/
-*.py[cod]
-*.pyo
+# Keep dependency folders hidden even though directory traversal is allowed above.
 frontend/node_modules/
-frontend/dist/
-frontend_dist/
-frontend/*.tsbuildinfo
-frontend/vite.config.js
-frontend/vite.config.d.ts
-
-# OS/editor/temp files.
-.DS_Store
-.idea/
-.vscode/
-*.log
-tmp/
-temp/
