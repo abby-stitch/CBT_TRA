@@ -1,6 +1,6 @@
-# CBT Thought Record Agent Demonstration
+# CBT Thought Record Agent Current Work Record
 
-本文档根据 `proposal.md` 的项目目标，并结合当前仓库的真实代码状态，说明本项目是什么、已经实现了什么、各文件的作用、如何运行、如何使用，以及后续如何修改和扩展。
+本文档是当前项目工作的阶段性记录和展示准备材料，不是最终项目报告。它根据 `proposal.md` 的项目目标，并结合当前仓库的真实代码状态，说明本项目是什么、已经实现了什么、各文件的作用、如何运行、如何使用，以及后续如何修改和扩展。
 
 ## 1. 项目说明
 
@@ -24,20 +24,34 @@
 - 本地 session JSON 保存。空 session 不会落盘，用户发送第一条消息后才开始保存
 - 单 session / 多 session 报告生成。报告生成时会调用 LLM 生成 summary 和 action items
 - 已保存 report 页面。可读取、查看和删除本地 report JSON，删除 report 不会修改原始 session
-- completed session archive 页面。只展示已完成的 thought record，不展示 conversation transcript
+- session archive 页面。展示本地已保存且有用户输入的 session，支持 `completed` / `in_progress` / `stopped` 状态；详情只展示 thought record，不展示 conversation transcript
 - settings 页面，用于切换模型、API 地址、保存路径和个人背景信息
 - safety check，用于识别 self-harm / suicide 相关风险语言
-- 一个轻量 RAG/knowledge-base 模块，用内置 CBT cognitive distortions 列表辅助 Step 4
+- 一个轻量 RAG/knowledge-base 模块，用静态 CBT knowledge snippets 辅助 thought-record steps，尤其是 Step 4 cognitive distortions 和 Step 5 balanced thought
 
 需要注意：proposal 中提到 Hugging Face CBT-Bench、C2D2 Dataset。当前代码并没有真正接入这些外部数据集，也没有实现向量数据库检索；目前的 RAG 更准确地说是基于 `backend/knowledge_base.py` 的静态知识库注入。
 
-### 1.1 当前已完成的最新修改
+### 1.1 Cognitive Distortion 分类来源与权威性
+
+当前项目使用的 cognitive distortion 分类方式是 Beck CBT 体系中的 worksheet taxonomy。具体 label set 来自 Beck Institute 的 `CBT Worksheet Packet 2020 Edition`，该 packet 标注为 adapted from Judith S. Beck, *Cognitive Behavior Therapy: Basics and Beyond*, 3rd edition (2020)。Beck Institute 官方资源页也说明这些 worksheets 是配套 Judith Beck 第三版 CBT 教材的 clinical resources。
+
+因此，这套分类在 CBT thought record / worksheet 使用场景下是权威且合适的。需要注意的是，它不是 DSM/ICD 诊断分类，也不应该被系统用作 clinical diagnosis。本项目把这些 labels 作为 self-reflection / thought-record guidance 中的 tentative cognitive pattern labels：模型可以建议 1-3 个可能的 distortion，最终以用户确认的 `distortions` 为正式记录。
+
+Reference links / 参考链接:
+
+- [Beck Institute, `CBT Worksheet Packet 2020 Edition`](https://learn.beckinstitute.org/cms/delivery/media/MCPNPP5FFGJVDJ7C74SMXCMM5CWY)
+- [Beck Institute, `Resources from Cognitive Behavior Therapy: Basics and Beyond, 3rd Edition`](https://beckinstitute.org/cbt-resources/resources-for-professionals-and-students/cbtresources/)
+- [Beck Institute Cares, `Coping with Depression`](https://cares.beckinstitute.org/wp-content/uploads/sites/2/2021/06/Coping-with-Depression.pdf)
+- [Guilford Press, Judith S. Beck, *Cognitive Behavior Therapy: Basics and Beyond*, 3rd edition](https://www.guilford.com/books/Cognitive-Behavior-Therapy/Judith-Beck/9781462544196)
+
+### 1.2 当前已完成的最新修改
 
 最近一轮功能完善后，当前项目状态如下：
 
 - Profile / personal context 已接入。用户可以在首页右上角人像按钮中填写个人背景，这些内容会作为新 conversation 和 report summary 的上下文，但不是自动 memory。
-- Session archive 已接入。顶部 `Session` 导航进入 `/sessions`，只列出 completed sessions，分页展示，每页约 10 条。
-- Session 详情只展示 thought record 字段，不展示 conversation transcript。
+- Session archive 已接入。顶部 `Session` 导航进入 `/sessions`，展示本地已保存且有用户输入的 sessions，分页展示，每页约 10 条。
+- Session 详情只展示 thought record 字段，不展示 conversation transcript；`in_progress` session 可以从 archive 恢复继续，`completed` / `stopped` session 可以查看结构化记录。
+- Session archive 支持删除本地 session JSON。删除 session 不会自动删除已经保存过的 report。
 - 空 session 不会保存。只有用户发送消息后，session 才会写入本地 JSON。
 - Report 页面只保留 Stitch 风格版本。
 - Single-session 和 multi-session report 都有专门的 LLM summary/action-items prompt。
@@ -45,6 +59,8 @@
 - 已保存 report 可以在页面删除。删除只影响 `reports/report_<report_id>.json`，不会改变任何 `sessions/session_<session_id>.json`。
 - Multi-session report 中点击单个 session 会回到 session archive 查看原始 thought record，不会生成新的 single-session report。
 - Multi-session report 的强度对比颜色已调整：调整前为浅红色，调整后为浅绿色。
+- Conversation 使用的 LLM 会写入 session JSON 的 `conversation_llm`，report 生成使用的 LLM 会写入 report JSON 的 `report_llm`，前端会显示实际模型名称。
+- OpenAI-compatible API key 推荐放在项目根目录 `.env` 文件中；`.env` 不提交 git，`.env.example` 提供示例。
 
 ## 2. 当前系统架构
 
@@ -267,6 +283,8 @@ REPORTS_DIR = "<project_root>/reports"
 
 用于读取和保存运行时 settings。React 前端右上角 settings 修改的内容会写入项目根目录下的 `app_settings.json`。它会把相对路径如 `sessions`、`reports` 自动解析为当前项目根目录下的路径，方便换电脑运行。
 
+它也会在启动时读取项目根目录的 `.env` 文件，把里面的环境变量加载到当前后端进程。真实 API key 推荐放在 `.env` 中，`app_settings.json` 只保存环境变量名，例如 `OPENAI_API_KEY`。
+
 `backend/llm_io.py`
 
 统一封装 LLM 调用。当前支持两种 provider：
@@ -300,7 +318,36 @@ POST <LLM_URL>
 
 `backend/knowledge_base.py`
 
-保存 cognitive distortions 知识库。目前是一个静态列表，包括：
+保存 CBT 轻量知识库。当前知识库内容都基于 Beck Institute 官方 worksheet / booklet 的说明，并在代码里保留 source notes。当前知识库分为两类：
+
+1. Step-specific thought-record guidance：用于 Step 1/2/3/5，覆盖 identifying automatic thoughts、evidence for、evidence against 和 adaptive / alternative response guidance。
+2. Cognitive distortion guidance：用于 Step 4，采用 Beck Institute `CBT Worksheet Packet 2020 Edition` 中的 12 个 cognitive distortion labels，并结合 Beck Institute `Coping with Depression` booklet 中的 thinking errors definitions 进行 paraphrased definitions 和 source-grounded examples。
+
+这样系统不需要大型向量数据库，也不需要把 CBT-Bench / C2D2 全量塞进 prompt；每个 step 只注入当前最相关的小段 CBT knowledge，保持 prompt 可控。
+
+当前 knowledge injection 方式是 step-based static injection，不是真正的 embedding/vector database RAG。具体流程是：
+
+```text
+current_step
+  -> CBTPrompts.stepX()
+  -> DistortionKnowledge.get_step_knowledge(step) 或 get_full_distortions()
+  -> 拼入当前 step prompt
+  -> agent.py 中的 extract_and_fill() / respond() 把 step prompt 放进 LLM prompt
+```
+
+也就是说，系统不是根据用户 query 去搜索知识库，而是根据当前 CBT step 固定注入一小段官方来源的相关知识：
+
+- Step 1 注入 identifying automatic thoughts / situation-emotion-thought guidance
+- Step 2 注入 evidence for guidance
+- Step 3 注入 evidence against guidance
+- Step 4 注入 cognitive distortion label set 和 definitions
+- Step 5 注入 adaptive / alternative response guidance
+- Step 6 不注入额外知识，只收集新的 emotion intensity
+- Step 7 不注入额外知识，只基于完整 thought record 生成 summary
+
+这对应 `improvement.md` 中建议的 rule-based lightweight RAG 思路，但当前没有单独拆成 `backend/rag.py`。
+
+当前 label set 包括：
 
 - All-or-nothing thinking
 - Catastrophizing (fortune telling)
@@ -315,7 +362,7 @@ POST <LLM_URL>
 - Should and must statements
 - Tunnel vision
 
-Step 4 会把这部分内容注入 prompt，让 LLM 只能从这些 label 中选择 distortion。
+Step 4 会把 cognitive distortion guidance 注入 prompt，让 LLM 只能从这些 label 中选择 distortion。由于 cognitive distortions 的边界本身可能重叠，系统设计上把模型输出视为 tentative suggestions；正式 `distortions` 字段应来自用户选择、接受或确认，而不是模型单方面诊断。
 
 `backend/safety.py`
 
@@ -379,6 +426,8 @@ Terminal 版本入口。运行后会启动一个命令行 thought record session
 - `GET /api/report-sessions`
 - `GET /api/sessions`
 - `GET /api/sessions/{session_id}`
+- `POST /api/sessions/{session_id}/resume`
+- `DELETE /api/sessions/{session_id}`
 - `POST /api/reports/generate`
 - `POST /api/reports/save`
 - `GET /api/reports`
@@ -574,7 +623,19 @@ API_KEY_ENV_VAR = "OPENAI_API_KEY"
 export OPENAI_API_KEY="your_real_api_key"
 ```
 
-项目不会把真实 API key 写入代码或 settings 文件，只保存环境变量名。
+项目不会把真实 API key 写入代码或 settings 文件，只保存环境变量名。推荐方式是在项目根目录复制 `.env.example` 为 `.env`：
+
+```bash
+cp .env.example .env
+```
+
+然后编辑 `.env`：
+
+```text
+OPENAI_API_KEY=your_real_api_key
+```
+
+`.env` 已加入 `.gitignore`，不会上传；`.env.example` 会保留在仓库中，方便别人知道需要配置哪些变量。
 
 ## 7. Terminal 版本使用方法
 
@@ -676,12 +737,14 @@ http://127.0.0.1:5173/sessions
 
 当前规则：
 
-- 只展示 `completed` session
+- 展示本地已保存且有用户输入的 session，包括 `completed`、`in_progress` 和 `stopped`
 - 列表每页约 10 条
-- 点击某一条后进入 thought record 详情
+- 点击 `completed` 或 `stopped` session 后进入 thought record 详情
+- 点击 `in_progress` session 后会恢复到 conversation 页面继续完成
 - 详情只展示结构化 thought record 字段，不展示 conversation transcript
-- 详情页里的 `Generate Report` 才会进入单 session report 生成页面并调用 LLM
-- 可以通过 `/sessions?session_id=<session_id>` 直接打开某个 completed session 的详情
+- 详情页里的 `Generate Report` 只对 `completed` session 显示，点击后才会进入单 session report 生成页面并调用 LLM
+- Session archive 支持删除本地 session JSON；删除 session 不会自动删除已经保存的 report
+- 可以通过 `/sessions?session_id=<session_id>` 直接打开某个 session 的详情
 
 ### 8.5 报告页面
 
@@ -837,11 +900,19 @@ uv run python -m backend.report_cli generate --mode recent --limit 5 --print-jso
 
 ### `GET /api/sessions`
 
-列出 session archive 页面使用的 completed sessions。这个接口只返回已完成 session 的摘要信息，不返回 conversation transcript。
+列出 session archive 页面使用的本地 sessions。它会返回已经保存且有用户输入的 sessions，包括 `completed`、`in_progress` 和 `stopped`，但不会返回 conversation transcript。
 
 ### `GET /api/sessions/{session_id}`
 
-读取某个 completed session 的完整 thought record 数据。前端 session archive 详情页使用这个接口。它不会调用 LLM，也不会生成 report。
+读取某个 session 的完整 thought record 数据。前端 session archive 详情页使用这个接口。它不会调用 LLM，也不会生成 report。
+
+### `POST /api/sessions/{session_id}/resume`
+
+从本地 session JSON 恢复一个 `in_progress` session，并返回当前对话状态。前端点击进行中的 session 时会使用这个接口回到 conversation 页面继续。
+
+### `DELETE /api/sessions/{session_id}`
+
+删除本地 `sessions/session_<session_id>.json`。如果该 session 正在内存中的 active agent 列表里，也会一并移除。这个操作不会修改或删除已经保存的 report。
 
 ### `POST /api/reports/generate`
 
@@ -896,6 +967,13 @@ sessions/session_<session_id>.json
   "safety_state": "normal",
   "safety_reason": null,
   "last_safety_warning_turn": 0,
+  "user_context": "optional user profile/context text",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
   "thought_record": {
     "date": "2026-05-02 18:16",
     "situation": "...",
@@ -936,7 +1014,7 @@ sessions/session_<session_id>.json
 
 报告功能默认只读取 `completed` sessions。
 
-Session archive 页面同样只显示 `completed` sessions。创建 session 但完全没有发送用户消息时，不会产生 session JSON 文件；如果 session 已保存但未完成，仍会保留为 `in_progress`，但不会进入 report 或 session archive 的默认列表。
+Session archive 页面显示所有已经保存且有用户输入的 sessions。创建 session 但完全没有发送用户消息时，不会产生 session JSON 文件；如果 session 已保存但未完成，会保留为 `in_progress`，并可从 session archive 恢复继续。
 
 ### 11.2 Report JSON
 
@@ -968,7 +1046,13 @@ reports/report_<report_id>.json
   "llm_action_items": ["...", "...", "..."],
   "llm_error": null,
   "include_llm_summary": true,
-  "profile_context_used": true
+  "profile_context_used": true,
+  "report_llm": {
+    "provider": "openai_compatible",
+    "model": "gpt-4o-mini",
+    "url": "https://api.openai.com/v1",
+    "api_key_env_var": "OPENAI_API_KEY"
+  }
 }
 ```
 
@@ -1031,7 +1115,7 @@ LLM_MODEL = "gemma3:27b"
 - `frontend/src/types.ts`
 - `frontend/src/App.tsx` 中 report 展示部分
 
-### 12.4 修改 cognitive distortions 知识库
+### 12.4 修改 CBT knowledge base
 
 改：
 
@@ -1039,7 +1123,12 @@ LLM_MODEL = "gemma3:27b"
 backend/knowledge_base.py
 ```
 
-注意：`agent.py` 里的 `_distortion_label_set()` 会从知识库中解析形如：
+当前知识库包含：
+
+- `get_step_knowledge(step)`：按 step 返回短小的 source-grounded thought-record guidance
+- `get_full_distortions()`：返回 Step 4 使用的 cognitive distortion label set 和判断说明
+
+注意：`agent.py` 里的 `_distortion_label_set()` 会从 `get_full_distortions()` 中解析形如：
 
 ```text
 1. All-or-nothing thinking
@@ -1179,21 +1268,53 @@ I'm nervous now, but I can practice more and I have handled nervous conversation
 9. 打开 `/reports`，选择 recent 或 custom，生成多 session report。多 session report 中点击单个 session 会回到 session archive，而不是生成新的 single report。
 10. 点击 `Save Report` 保存当前 report，再到 `/reports/saved` 查看或删除保存的 report。
 
-## 15. 当前限制和后续改进方向
+## 15. 打包前检查与建议
+
+当前仓库还没有正式的 `Dockerfile` 或 `docker-compose.yml`。如果要以 demonstration 为基础打包，建议先按下面顺序整理：
+
+1. 确认本地直接运行稳定：
+
+```bash
+uv sync
+uv run uvicorn backend.api_app:app --reload --port 8000
+cd frontend
+npm install
+npm run dev
+```
+
+2. 确认 `.env`、`app_settings.json`、`sessions/session_*.json`、`reports/report_*.json` 没有被提交。真实 API key、个人 profile、测试 session 和 report 都应该留在本地。
+
+3. 如果使用 Ollama，打包说明里需要提醒使用者单独安装 Ollama 并提前 pull 模型，例如：
+
+```bash
+ollama pull gemma2:9b
+```
+
+4. 如果使用 OpenAI-compatible API，使用者需要复制 `.env.example` 为 `.env`，填写 `OPENAI_API_KEY`，然后在页面 settings 里选择 `openai_compatible` provider 和模型名。
+
+5. 如果下一步做 Docker，建议使用 `docker-compose.yml` 管理：
+
+- backend container：运行 FastAPI，暴露 `8000`
+- frontend container 或静态构建：React build 后由 nginx 或后端静态服务托管
+- volume：把 `sessions/` 和 `reports/` 挂载出来，避免容器重建后数据丢失
+- `.env`：通过 compose 的 env file 或 environment 注入，不写进镜像
+
+6. 当前页面 settings 会写 `app_settings.json`。如果是给别人使用，推荐不要随项目提交这个文件，让每台电脑首次启动时使用默认配置，然后用户在页面里修改 provider、model、路径和 profile。
+
+## 16. 当前限制和后续改进方向
 
 当前限制：
 
 - 没有真正接入外部 CBT-Bench / C2D2 数据集
 - 没有向量数据库或 embedding retrieval
 - LLM 输出 JSON 解析依赖正则提取第一个 `{...}`，复杂错误输出时可能失败
-- API 后端中的 `_agents` 存在内存里，服务重启后不能继续 in-progress session
+- `in_progress` session 已经可以从本地 JSON 恢复继续，但恢复逻辑仍然比较轻量，后续可以增加更严格的状态校验和冲突处理
 - Personal context 不是自动 memory，不会自动从历史 session 中学习或更新用户画像
 - 前端没有自动化测试
 - 项目没有完整单元测试或端到端测试
 
 后续可以改进：
 
-- 增加 session resume 功能，从 JSON 恢复未完成会话
 - 接入真正的 RAG，例如 embedding + vector database
 - 增加 CBT distortion detection evaluation dataset
 - 给 `extract_and_fill()` 增加更稳定的 structured output 机制
@@ -1202,7 +1323,7 @@ I'm nervous now, but I can practice more and I have handled nervous conversation
 - 给前端引入 React Router 和基础组件拆分
 - 增加更多 safety case 测试
 
-## 16. 快速命令汇总
+## 17. 快速命令汇总
 
 安装 Python 依赖：
 

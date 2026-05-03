@@ -282,8 +282,10 @@ React 前端目前接管这些页面：
 - `POST /api/start`：创建新 session，返回开场白 + 初始 thought_record
 - `POST /api/message`：处理一轮用户消息（抽取、hard-check、生成回复、保存 session）
 - `GET /api/report-sessions`：列出 completed sessions
-- `GET /api/sessions`：列出 session archive 中的 completed sessions
-- `GET /api/sessions/{session_id}`：读取 completed session 的 thought record，不调用 LLM
+- `GET /api/sessions`：列出 session archive 中已保存且有用户输入的 sessions，包括 `completed`、`in_progress`、`stopped`
+- `GET /api/sessions/{session_id}`：读取 session 的 thought record，不调用 LLM
+- `POST /api/sessions/{session_id}/resume`：恢复 `in_progress` session，回到 conversation 继续
+- `DELETE /api/sessions/{session_id}`：删除本地 session JSON，不修改已保存 report
 - `GET /api/reports/session/{session_id}`：生成单个 session 的报告数据，会调用 report LLM
 - `GET /api/reports/multi`：生成多 session 的报告数据，会调用 report LLM
 - `POST /api/reports/save`：保存当前已经生成好的 report JSON，不重新调用 LLM

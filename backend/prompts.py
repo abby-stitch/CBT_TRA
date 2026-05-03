@@ -95,13 +95,17 @@ Output JSON only. No extra text.
 
     @staticmethod
     def step1():
-        return """
+        kb = DistortionKnowledge.get_step_knowledge(1)
+        return f"""
 # Step 1 Goal
 Collect the full opening record:
 - situation
 - emotion
 - intensity_before
 - automatic_thought
+
+# Step Knowledge
+{kb}
 
 # What counts
 - situation: the specific event, trigger, or context
@@ -132,9 +136,13 @@ And the automatic_thought must be the distress-driving thought being examined in
 
     @staticmethod
     def step2():
-        return """
+        kb = DistortionKnowledge.get_step_knowledge(2)
+        return f"""
 # Step 2 Goal
 Collect evidence_for.
+
+# Step Knowledge
+{kb}
 
 # What counts
 - evidence_for: factual observations or events that support the current negative automatic thought being examined
@@ -151,9 +159,13 @@ Step 2 is complete only when evidence_for contains at least one item.
 
     @staticmethod
     def step3():
-        return """
+        kb = DistortionKnowledge.get_step_knowledge(3)
+        return f"""
 # Step 3 Goal
 Collect evidence_against.
+
+# Step Knowledge
+{kb}
 
 # What counts
 - evidence_against: factual observations or events that do not fit the current negative automatic thought, or suggest it may not be fully true
@@ -184,6 +196,8 @@ Use only the distortion labels from the knowledge base below.
 
 # Reply Guidance
 - Present possible distortions tentatively, not as facts.
+- Use the Knowledge Base definitions, common cues, and distinguish-from notes when deciding which labels are most relevant.
+- Prefer 1-2 central labels when possible; use 3 only when all three are clearly supported.
 - Briefly explain only the most relevant 1-3 items.
 - Ask the user which one(s), if any, fit best.
 - If the user is unsure, offer 1-3 likely options and invite confirmation.
@@ -196,9 +210,13 @@ Predicted suggestions alone do not complete the step.
 
     @staticmethod
     def step5():
-        return """
+        kb = DistortionKnowledge.get_step_knowledge(5)
+        return f"""
 # Step 5 Goal
 Collect balanced_thought.
+
+# Step Knowledge
+{kb}
 
 # What counts
 - balanced_thought: a more realistic, fair, and grounded thought that considers both evidence_for and evidence_against

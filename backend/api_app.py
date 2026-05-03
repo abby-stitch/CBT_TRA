@@ -88,6 +88,20 @@ class DeleteReportResponse(BaseModel):
     report_id: str
 
 
+class DeleteSessionResponse(BaseModel):
+    ok: bool
+    session_id: str
+
+
+class ResumeSessionResponse(BaseModel):
+    session_id: str
+    current_step: int
+    session_status: str
+    thought_record: dict[str, Any]
+    chat_history: list[dict[str, Any]]
+    conversation_llm: dict[str, Any] = Field(default_factory=dict)
+
+
 class AppSettings(BaseModel):
     llm_provider: str
     llm_url: str
@@ -108,6 +122,44 @@ class AppSettingsUpdate(BaseModel):
     user_context: str | None = None
 
 
+def _agent_from_session_data(session_data: dict[str, Any], session_id: str) -> CBTAgent:
+    llm_meta = session_data.get("conversation_llm") or {}
+    agent = CBTAgent(
+        step=int(session_data.get("current_step") or 1),
+        initial_record=session_data.get("thought_record") or None,
+        model=llm_meta.get("model") or None,
+        url=llm_meta.get("url") or None,
+        llm_provider=llm_meta.get("provider") or None,
+        api_key_env_var=llm_meta.get("api_key_env_var") or None,
+        user_context=session_data.get("user_context") or "",
+    )
+    agent.session_id = str(session_data.get("session_id") or session_id)
+    agent.chat_history = list(session_data.get("chat_history") or [])
+    agent.turns = list(session_data.get("turns") or [])
+    agent.session_status = str(session_data.get("session_status") or "in_progress")
+    agent.safety_state = str(session_data.get("safety_state") or "normal")
+    agent.safety_reason = session_data.get("safety_reason")
+    agent.last_safety_warning_turn = int(session_data.get("last_safety_warning_turn") or 0)
+    return agent
+
+
+def _finalize_if_ready(agent: CBTAgent) -> bool:
+    global _active_session_id
+    if agent.session_status != "in_progress":
+        return False
+    if agent.current_step < 7 or not agent.is_ready_for_final_summary():
+        return False
+
+    summary = agent.finalize_session()
+    if not agent.chat_history or agent.chat_history[-1].get("content") != summary:
+        agent.chat_history.append({"role": "assistant", "content": summary})
+    agent.save_session()
+    _completed_sessions.add(agent.session_id)
+    if _active_session_id == agent.session_id:
+        _active_session_id = None
+    return True
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -126,15 +178,15 @@ def update_settings(req: AppSettingsUpdate) -> AppSettings:
 @app.post("/api/start", response_model=StartResponse)
 def start() -> StartResponse:
     global _active_session_id
-    if (
-        _active_session_id is not None
-        and _active_session_id in _agents
-        and _active_session_id not in _completed_sessions
-    ):
+    active_agent = _agents.get(_active_session_id or "")
+    if active_agent is not None:
+        _finalize_if_ready(active_agent)
+    if active_agent is not None and active_agent.session_status == "in_progress":
         raise HTTPException(
             status_code=409,
             detail="A session is already in progress. Finish it before starting a new one.",
         )
+    _active_session_id = None
 
     settings = app_settings.load_settings()
     agent = CBTAgent(step=1, user_context=settings.get("user_context") or "")
@@ -156,7 +208,7 @@ def message(req: MessageRequest) -> MessageResponse:
     agent = _agents.get(req.session_id)
     if agent is None:
         raise HTTPException(status_code=404, detail="Unknown session_id")
-    if req.session_id in _completed_sessions:
+    if agent.session_status != "in_progress":
         raise HTTPException(status_code=409, detail="This session is already closed.")
 
     result = agent.process_user_turn(req.message)
@@ -188,9 +240,19 @@ def report_sessions() -> dict[str, Any]:
 
 @app.get("/api/sessions")
 def list_sessions() -> dict[str, Any]:
+    app_settings.load_settings()
     items: list[dict[str, Any]] = []
     for session_data in reversed(report_service.load_all_sessions()):
-        if session_data.get("session_status") != "completed":
+        if session_data.get("session_status") == "in_progress" and int(session_data.get("current_step") or 1) >= 7:
+            agent = _agents.get(str(session_data.get("session_id") or ""))
+            if agent is None:
+                agent = _agent_from_session_data(session_data, str(session_data.get("session_id") or ""))
+                _agents[agent.session_id] = agent
+            if _finalize_if_ready(agent):
+                session_data = report_service.load_session(agent.session_id)
+
+        has_user_input = any((msg.get("role") == "user" and str(msg.get("content") or "").strip()) for msg in session_data.get("chat_history") or [])
+        if not has_user_input and not session_data.get("turns"):
             continue
         record = session_data.get("thought_record") or {}
         items.append(
@@ -199,6 +261,7 @@ def list_sessions() -> dict[str, Any]:
                 "last_updated": session_data.get("last_updated"),
                 "current_step": session_data.get("current_step"),
                 "session_status": session_data.get("session_status"),
+                "conversation_llm": session_data.get("conversation_llm") or {},
                 "date": record.get("date"),
                 "emotion": record.get("emotion") or None,
                 "situation": record.get("situation") or None,
@@ -214,10 +277,68 @@ def list_sessions() -> dict[str, Any]:
 
 @app.get("/api/sessions/{session_id}")
 def get_session(session_id: str) -> dict[str, Any]:
-    for session_data in report_service.load_all_sessions():
-        if str(session_data.get("session_id") or "") == session_id and session_data.get("session_status") == "completed":
-            return session_data
-    raise HTTPException(status_code=404, detail="Session not found.")
+    app_settings.load_settings()
+    try:
+        return report_service.load_session(session_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Session not found.") from exc
+
+
+@app.post("/api/sessions/{session_id}/resume", response_model=ResumeSessionResponse)
+def resume_session(session_id: str) -> ResumeSessionResponse:
+    global _active_session_id
+    app_settings.load_settings()
+    active_agent = _agents.get(_active_session_id or "")
+    if active_agent is not None and active_agent.session_status == "in_progress" and active_agent.session_id != session_id:
+        raise HTTPException(
+            status_code=409,
+            detail="A different session is already in progress. Finish it before resuming another one.",
+        )
+
+    try:
+        session_data = report_service.load_session(session_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Session not found.") from exc
+
+    if session_data.get("session_status") != "in_progress":
+        raise HTTPException(status_code=409, detail="Only in-progress sessions can be resumed.")
+
+    agent = _agent_from_session_data(session_data, session_id)
+
+    _agents[agent.session_id] = agent
+    if _finalize_if_ready(agent):
+        _active_session_id = None
+    else:
+        _active_session_id = agent.session_id
+
+    return ResumeSessionResponse(
+        session_id=agent.session_id,
+        current_step=agent.current_step,
+        session_status=agent.session_status,
+        thought_record=agent.thought_record,
+        chat_history=agent.chat_history,
+        conversation_llm={
+            "provider": agent.llm_provider,
+            "model": agent.model,
+            "url": agent.url,
+            "api_key_env_var": agent.api_key_env_var,
+        },
+    )
+
+
+@app.delete("/api/sessions/{session_id}", response_model=DeleteSessionResponse)
+def delete_session(session_id: str) -> DeleteSessionResponse:
+    global _active_session_id
+    try:
+        report_service.delete_session(session_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Session not found.") from exc
+
+    _agents.pop(session_id, None)
+    _completed_sessions.discard(session_id)
+    if _active_session_id == session_id:
+        _active_session_id = None
+    return DeleteSessionResponse(ok=True, session_id=session_id)
 
 
 @app.post("/api/reports/generate", response_model=GenerateReportResponse)

@@ -60,6 +60,11 @@ export type DeleteReportResponse = {
   report_id: string;
 };
 
+export type DeleteSessionResponse = {
+  ok: boolean;
+  session_id: string;
+};
+
 export type LlmMetadata = {
   provider?: string;
   model?: string;
@@ -71,6 +76,7 @@ export type SessionArchiveItem = ReportSession & {
   last_updated?: string;
   current_step?: number;
   session_status?: string;
+  conversation_llm?: LlmMetadata;
   situation?: string | null;
   automatic_thought?: string | null;
 };
@@ -89,6 +95,15 @@ export type SessionDetail = {
   thought_record?: ReportItem;
   chat_history?: Array<{ role?: string; content?: string }>;
   turns?: Array<Record<string, unknown>>;
+};
+
+export type ResumeSessionResponse = {
+  session_id: string;
+  current_step: number;
+  session_status: string;
+  thought_record: ThoughtRecord;
+  chat_history: Array<{ role?: string; content?: string }>;
+  conversation_llm?: LlmMetadata;
 };
 
 export type ReportScope = {

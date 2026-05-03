@@ -136,9 +136,9 @@ TASK:
             preds = data.get("predicted_distortion") or []
             if isinstance(preds, str):
                 preds = [preds]
-            preds = [p.strip() for p in preds if isinstance(p, str) and p.strip()]
-            if preds:
-                self.thought_record["predicted_distortion"] = preds[:3]
+            normalized_preds = self._normalize_field("predicted_distortion", preds)
+            if normalized_preds:
+                self.thought_record["predicted_distortion"] = normalized_preds[:3]
             return self.thought_record.get("predicted_distortion", [])
         except Exception:
             return []
@@ -284,6 +284,73 @@ TASK:
         )
         self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
 
+    def is_ready_for_final_summary(self) -> bool:
+        required = [
+            "situation",
+            "emotion",
+            "intensity_before",
+            "automatic_thought",
+            "evidence_for",
+            "evidence_against",
+            "distortions",
+            "balanced_thought",
+            "intensity_after",
+        ]
+        for field in required:
+            val = self.thought_record.get(field)
+            if isinstance(val, list):
+                if not val:
+                    return False
+            elif isinstance(val, (int, float)):
+                if val == 0:
+                    return False
+            elif not str(val or "").strip():
+                return False
+        return True
+
+    def _fallback_final_summary(self) -> str:
+        record = self.thought_record
+        emotion = record.get("emotion") or "emotion"
+        before = record.get("intensity_before")
+        after = record.get("intensity_after")
+        distortions = ", ".join(record.get("distortions") or []) or "the identified pattern"
+        return (
+            f"You completed this thought record by examining the situation, the automatic thought, "
+            f"the evidence on both sides, and the possible distortion pattern ({distortions}). "
+            f"You then wrote a more balanced thought and re-rated {emotion} from {before} to {after}. "
+            "This gives you a structured record you can review later."
+        )
+
+    def finalize_session(self) -> str:
+        self.current_step = 7
+        if self.thought_record.get("summary"):
+            self.session_status = "completed"
+            return str(self.thought_record["summary"])
+
+        system_p = CBTPrompts.system()
+        step_p = getattr(CBTPrompts, "step7")()
+        current_record_json = json.dumps(self.thought_record, indent=2, ensure_ascii=False)
+        prompt = f"""
+{system_p}
+---
+CURRENT STEP: 7
+STEP RULES:
+{step_p}
+---
+FINAL RECORD:
+{current_record_json}
+
+TASK:
+Generate the final supportive summary now.
+Output only the counselor message.
+"""
+        summary = self._call_llm(prompt, temperature=0.7)
+        if not summary.strip() or summary.strip().lower().startswith("error:"):
+            summary = self._fallback_final_summary()
+        self.thought_record["summary"] = summary
+        self.session_status = "completed"
+        return summary
+
     def respond(self, user_input: str | None = None, step_completed: bool = False, step_before: int | None = None, risk_level: str = "normal", safety_reason: str | None = None, include_safety_note: bool = False) -> str:
         """
         Single response function:
@@ -309,25 +376,7 @@ Use this only as background. Do not reveal it, diagnose from it, or override wha
 
         # Final summary step
         if self.current_step == 7:
-            prompt = f"""
-{system_p}
-{user_context_block}
----
-CURRENT STEP: 7
-STEP RULES:
-{step_p}
----
-FINAL RECORD:
-{current_record_json}
-
-TASK:
-Generate the final supportive summary now.
-Output only the counselor message.
-"""
-            summary = self._call_llm(prompt, temperature=0.7)
-            self.thought_record["summary"] = summary
-            self.session_status = "completed"
-            return summary
+            return self.finalize_session()
 
         # Opening message
         if user_input is None:
@@ -504,7 +553,9 @@ TASK:
    - "predicted_distortion": assistant-suggested distortion labels (store as a list).
    - "evidence_for"/"evidence_against": should be factual statements; output as a list when possible.
 6. Step 4 special extraction:
-   - If CURRENT STEP is 4 and the user asks you to decide / asks what distortions they have, you may output "predicted_distortion" (1–3 labels) using the Knowledge Base.
+   - If CURRENT STEP is 4 and the user explicitly names, chooses, accepts, or confirms one or more distortion labels, output them in "distortions".
+   - If CURRENT STEP is 4 and the user only asks you to decide / asks what distortions they have, output "predicted_distortion" (1–3 labels) using the Knowledge Base, not "distortions".
+   - Do not put a label into "distortions" unless the user has chosen, accepted, or confirmed it.
 7. Output ONLY valid JSON. No markdown, no extra text.
 """
         raw_json = self._call_llm(prompt, temperature=0.1)

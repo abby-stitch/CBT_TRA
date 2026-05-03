@@ -1,9 +1,11 @@
 import type {
   AppSettings,
   DeleteReportResponse,
+  DeleteSessionResponse,
   MessageResponse,
   Report,
   ReportSessionsResponse,
+  ResumeSessionResponse,
   SavedReportsResponse,
   SessionArchiveResponse,
   SessionDetail,
@@ -58,6 +60,18 @@ export function listSessions(): Promise<SessionArchiveResponse> {
 
 export function getSession(sessionId: string): Promise<SessionDetail> {
   return requestJson<SessionDetail>(`/api/sessions/${encodeURIComponent(sessionId)}`);
+}
+
+export function resumeSession(sessionId: string): Promise<ResumeSessionResponse> {
+  return requestJson<ResumeSessionResponse>(`/api/sessions/${encodeURIComponent(sessionId)}/resume`, {
+    method: "POST"
+  });
+}
+
+export function deleteSession(sessionId: string): Promise<DeleteSessionResponse> {
+  return requestJson<DeleteSessionResponse>(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE"
+  });
 }
 
 export function getSingleSessionReport(sessionId: string): Promise<Report> {

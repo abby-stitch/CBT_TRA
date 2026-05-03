@@ -30,6 +30,13 @@ def _sessions_dir() -> Path:
     return Path(sessions_dir)
 
 
+def _safe_session_path(session_id: str) -> Path:
+    clean_id = str(session_id or "").strip()
+    if not clean_id or "/" in clean_id or "\\" in clean_id or clean_id.startswith("."):
+        raise FileNotFoundError(session_id)
+    return _sessions_dir() / f"session_{clean_id}.json"
+
+
 def _safe_int(value: Any) -> int | None:
     if isinstance(value, bool):
         return None
@@ -70,6 +77,20 @@ def load_all_sessions() -> list[dict[str, Any]]:
             continue
     out.sort(key=_session_sort_key)
     return out
+
+
+def load_session(session_id: str) -> dict[str, Any]:
+    path = _safe_session_path(session_id)
+    if not path.exists():
+        raise FileNotFoundError(session_id)
+    return _load_json(path)
+
+
+def delete_session(session_id: str) -> None:
+    path = _safe_session_path(session_id)
+    if not path.exists():
+        raise FileNotFoundError(session_id)
+    path.unlink()
 
 
 def completed_sessions() -> list[dict[str, Any]]:

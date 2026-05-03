@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteSavedReport,
+  deleteSession,
   getMultiSessionReport,
   getSavedReport,
   getSettings,
@@ -9,6 +10,7 @@ import {
   listSessions,
   listSavedReports,
   listReportSessions,
+  resumeSession,
   saveGeneratedReport,
   sendMessage,
   startSession,
@@ -23,6 +25,17 @@ function makeMessage(role: ChatMessage["role"], text: string): ChatMessage {
     text,
     createdAt: new Date().toISOString()
   };
+}
+
+function messagesFromHistory(history?: Array<{ role?: string; content?: string }>) {
+  return (history || [])
+    .filter((item) => item.role === "assistant" || item.role === "user")
+    .map((item, idx) => ({
+      id: `${item.role}-${idx}-${Math.random().toString(16).slice(2)}`,
+      role: item.role as ChatMessage["role"],
+      text: item.content || "",
+      createdAt: new Date().toISOString()
+    }));
 }
 
 function formatTime(value: string) {
@@ -191,6 +204,81 @@ function AppFrame({ children, active = "welcome" }: { children: React.ReactNode;
       <main className="wrap">{children}</main>
       {isSettingsOpen && <SettingsDialog onClose={() => setIsSettingsOpen(false)} onSaved={setActiveSettings} />}
       {isProfileOpen && <ProfileDialog onClose={() => setIsProfileOpen(false)} />}
+    </div>
+  );
+}
+
+function LearnThoughtRecordDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="About CBT thought records">
+      <section className="settings-modal learn-modal">
+        <div className="settings-head">
+          <div>
+            <div className="eyebrow">CBT Thought Record</div>
+            <h2>Learn more about this exercise</h2>
+          </div>
+          <button className="icon-btn" type="button" aria-label="Close" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="learn-grid">
+          <section>
+            <h3>What this tool does</h3>
+            <p>
+              This app guides one structured CBT thought record. It helps you write down a difficult situation, notice the
+              automatic thought connected to the emotion, examine evidence, identify possible thinking patterns, and write a
+              more balanced response.
+            </p>
+          </section>
+
+          <section>
+            <h3>The flow</h3>
+            <ol className="learn-steps">
+              <li>Situation, emotion, intensity, and automatic thought</li>
+              <li>Evidence that seems to support the thought</li>
+              <li>Evidence that does not support the thought</li>
+              <li>Possible cognitive distortions</li>
+              <li>A balanced or alternative thought</li>
+              <li>Re-rate the original emotion</li>
+              <li>Review the completed record</li>
+            </ol>
+          </section>
+
+          <section>
+            <h3>Why an agent helps</h3>
+            <p>
+              CBT thought records are usually learned from books or worksheets, but they can be hard to start and hard to
+              continue when emotions are already intense. The agent keeps the worksheet structure visible and asks for one
+              piece at a time.
+            </p>
+          </section>
+
+          <section>
+            <h3>Boundaries</h3>
+            <p>
+              This is a self-reflection and recording tool. It does not diagnose, treat, or replace professional support. If
+              you feel unsafe or at risk of harming yourself, seek immediate help from local emergency services or a trusted
+              support person.
+            </p>
+          </section>
+        </div>
+
+        <div className="learn-resources">
+          <h3>Official resources</h3>
+          <div className="resource-links">
+            <a href="https://learn.beckinstitute.org/cms/delivery/media/MCPNPP5FFGJVDJ7C74SMXCMM5CWY" target="_blank" rel="noreferrer">
+              Beck Institute CBT Worksheet Packet
+            </a>
+            <a href="https://beckinstitute.org/cbt-resources/resources-for-professionals-and-students/cbtresources/" target="_blank" rel="noreferrer">
+              Beck Institute CBT: Basics and Beyond resources
+            </a>
+            <a href="https://cares.beckinstitute.org/wp-content/uploads/sites/2/2021/06/Coping-with-Depression.pdf" target="_blank" rel="noreferrer">
+              Beck Institute Cares Coping with Depression
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -425,6 +513,18 @@ function ThoughtRecordConversation({
                     )}
                     <div className="bubble-wrap">
                       <div className="bubble">{message.text}</div>
+                      {isSessionComplete && recordUrl && message.role === "assistant" && message.id === messages[messages.length - 1]?.id && (
+                        <div className="summary-review-card">
+                          <div>
+                            <strong>Thought record complete</strong>
+                            <span>Review the completed worksheet before starting another session.</span>
+                          </div>
+                          <a className="btn-primary" href={sessionDetailUrl(sessionId)}>
+                            <span className="material-symbols-outlined small-icon">description</span>
+                            View Thought Record
+                          </a>
+                        </div>
+                      )}
                       <div className="timestamp">{formatTime(message.createdAt)}</div>
                     </div>
                     {message.role === "user" && (
@@ -491,6 +591,7 @@ function HomePage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<number | null>(null);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [isLearnOpen, setIsLearnOpen] = useState(false);
   const [recordUrl, setRecordUrl] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -606,7 +707,14 @@ function HomePage() {
     <AppFrame active="welcome">
       <section className="welcome-hero">
         <div className="eyebrow">CBT Thought Record</div>
-        <h1 className="hero-title">Examine one difficult moment step by step.</h1>
+        <h1 className="hero-title">
+          Examine one difficult
+          <br />
+          moment step by step.
+        </h1>
+        <button className="hero-learn-link" type="button" onClick={() => setIsLearnOpen(true)}>
+          Learn more about CBT thought records
+        </button>
         <p className="hero-copy">
           Choose a recent moment when your mood shifted. The guide will help you record what happened, what you felt,
           what went through your mind, and later develop a more balanced response.
@@ -626,29 +734,26 @@ function HomePage() {
           You do not need to know exactly what to write.
         </p>
       </section>
+      {isLearnOpen && <LearnThoughtRecordDialog onClose={() => setIsLearnOpen(false)} />}
 
       <div className="feature-visual">
-        <img
-          alt="Soft calm ocean waves at dawn"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoE-aG9-BVEqlSd1HRdS59rsEoLMFwWgHHARpL-WavAz3ei5VMmVtiAwQlUANFoVJaF4wbpi-PVCDDeMdY63C2KuZutk_JtXrxR9tJNy5n_In1uWtiTZ96AlRgrtqtdGzmke43qhCD7roeTjHaRD-zhlkJYlWueRQFXyCaJxu6aOcPJOdiQk4ousKLDIF6KXY8riU_Z57bR6ka9YRwdYw7WkJZPt2djr04v3jY2xiQUX1I0hZqoDpvuA1tZnK1ve5s120c4X1c_-Hu"
-        />
         <div className="feature-content">
           <p className="feature-kicker">During the session</p>
           <div className="feature-steps" aria-label="Thought record session steps">
-            <div>
-              <span className="material-symbols-outlined">edit_note</span>
+            <div className="feature-step">
+              <span className="step-icon material-symbols-outlined">edit_note</span>
               <p>Describe the moment</p>
             </div>
-            <div>
-              <span className="material-symbols-outlined">mood</span>
+            <div className="feature-step">
+              <span className="step-icon material-symbols-outlined">mood</span>
               <p>Name the emotion</p>
             </div>
-            <div>
-              <span className="material-symbols-outlined">psychology</span>
+            <div className="feature-step">
+              <span className="step-icon material-symbols-outlined">psychology</span>
               <p>Notice the thought</p>
             </div>
-            <div>
-              <span className="material-symbols-outlined">balance</span>
+            <div className="feature-step">
+              <span className="step-icon material-symbols-outlined">balance</span>
               <p>Build a balanced response</p>
             </div>
           </div>
@@ -886,6 +991,60 @@ function SessionsPage() {
     }
   }
 
+  async function handleResumeSession(sessionId: string) {
+    setError(null);
+    setSelectedId(null);
+    setDetail(null);
+    try {
+      const data = await resumeSession(sessionId);
+      if (data.session_status !== "in_progress") {
+        setActiveSessionId(null);
+        setActiveCurrentStep(null);
+        setActiveMessages([]);
+        setActiveDraft("");
+        setActiveRecordUrl(null);
+        setIsActiveComplete(true);
+        await refreshSessions();
+        setSelectedId(data.session_id);
+        return;
+      }
+      setActiveSessionId(data.session_id);
+      setActiveCurrentStep(data.current_step);
+      setActiveConversationLlm(data.conversation_llm || null);
+      setIsActiveComplete(false);
+      setActiveRecordUrl(null);
+      setActiveDraft("");
+      const restoredMessages = messagesFromHistory(data.chat_history);
+      setActiveMessages(
+        restoredMessages.length
+          ? restoredMessages
+          : [makeMessage("assistant", "Welcome back. We can continue this thought record from where you left off.")]
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not resume session.");
+    }
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    const confirmed = window.confirm("Delete this session? This removes the local session JSON. Saved reports will not be deleted.");
+    if (!confirmed) return;
+    setError(null);
+    try {
+      await deleteSession(sessionId);
+      setSessions((current) => current.filter((item) => item.session_id !== sessionId));
+      if (selectedId === sessionId) {
+        setSelectedId(null);
+        setDetail(null);
+      }
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(null);
+        setActiveMessages([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete session.");
+    }
+  }
+
   if (activeSessionId) {
     return (
       <ThoughtRecordConversation
@@ -911,7 +1070,7 @@ function SessionsPage() {
         <div>
           <div className="eyebrow">Session Archive</div>
           <h1 className="title">Past Sessions</h1>
-          <div className="meta-head">Review completed thought record sessions without generating a report.</div>
+          <div className="meta-head">Review completed thought records, resume in-progress sessions, or remove local session files.</div>
         </div>
         <button className="status-pill" type="button" onClick={handleStartNewSession} disabled={isStartingNew}>
           <span className="material-symbols-outlined small-icon">add_circle</span>
@@ -924,21 +1083,37 @@ function SessionsPage() {
           <section className="session-picker-panel">
             <div className="session-picker-head">
               <div>
-                <div className="eyebrow">Completed Only</div>
-                <h2>Choose a Thought Record</h2>
+                <div className="eyebrow">Local Sessions</div>
+                <h2>Choose a Session</h2>
               </div>
               <span>{sessions.length} sessions</span>
             </div>
             <div className="session-picker-list">
               {error && <div className="empty">{error}</div>}
               {isLoading && <div className="empty">Loading sessions...</div>}
-              {!isLoading && !sessions.length && <div className="empty">No completed sessions yet.</div>}
+              {!isLoading && !sessions.length && <div className="empty">No saved sessions yet.</div>}
               {pageItems.map((item) => (
-                <button
+                <div
                   className="session-picker-row"
-                  type="button"
                   key={item.session_id}
-                  onClick={() => setSelectedId(item.session_id)}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (item.session_status === "in_progress") {
+                      void handleResumeSession(item.session_id);
+                    } else {
+                      setSelectedId(item.session_id);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    if (item.session_status === "in_progress") {
+                      void handleResumeSession(item.session_id);
+                    } else {
+                      setSelectedId(item.session_id);
+                    }
+                  }}
                 >
                   <div className="session-picker-main">
                     <strong>{buildTitle(item)}</strong>
@@ -947,13 +1122,28 @@ function SessionsPage() {
                   <div className="session-picker-meta">
                     <span>{item.date || item.last_updated || item.session_id}</span>
                     <em>
-                      {item.intensity_before != null && item.intensity_after != null
+                      {item.session_status === "in_progress"
+                        ? `In progress · Step ${item.current_step ?? "N/A"}`
+                        : item.session_status === "stopped"
+                          ? "Stopped"
+                          : item.intensity_before != null && item.intensity_after != null
                         ? `${item.intensity_before} -> ${item.intensity_after}`
-                        : "Completed"}
+                            : "Completed"}
                     </em>
                   </div>
+                  <button
+                    className="session-delete-mini"
+                    type="button"
+                    aria-label={`Delete session ${item.session_id}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteSession(item.session_id);
+                    }}
+                  >
+                    <span className="material-symbols-outlined small-icon">delete</span>
+                  </button>
                   <span className="material-symbols-outlined">chevron_right</span>
-                </button>
+                </div>
               ))}
             </div>
             {sessions.length > pageSize && (
@@ -1000,9 +1190,19 @@ function SessionsPage() {
                     <button className="button secondary" type="button" onClick={returnToList}>
                       Back to Sessions
                     </button>
-                    <a className="button primary" href={`/reports/session/${detail.session_id}`}>
-                      Generate Report
-                    </a>
+                    {detail.session_status === "in_progress" && (
+                      <button className="button primary" type="button" onClick={() => void handleResumeSession(detail.session_id)}>
+                        Resume Session
+                      </button>
+                    )}
+                    {detail.session_status === "completed" && (
+                      <a className="button primary" href={`/reports/session/${detail.session_id}`}>
+                        Generate Report
+                      </a>
+                    )}
+                    <button className="button danger" type="button" onClick={() => void handleDeleteSession(detail.session_id)}>
+                      Delete Session
+                    </button>
                   </div>
                 </div>
 
