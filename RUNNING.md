@@ -60,21 +60,23 @@ On Linux Docker Engine, if `host.docker.internal` does not work, add this option
 --add-host=host.docker.internal:host-gateway
 ```
 
-### 3. Build the App Image
+### 3. Get the App Image
 
-Open a terminal in the project folder:
+For normal use, pull the published Docker Hub image:
 
 ```bash
-cd path/to/tra_test
+docker pull liangabby/cbt-thought-record-agent:latest
 ```
 
-Build the Docker image:
+Docker will also pull it automatically when you run the `docker run` command below.
+
+If you cloned the repository and changed the code, rebuild the image from the project folder:
 
 ```bash
 docker build --no-cache -t cbt-thought-record-agent .
 ```
 
-Use `--no-cache` when you want to make sure Docker picks up the latest frontend and backend changes.
+Use `--no-cache` when you want to make sure Docker picks up the latest frontend and backend changes. After rebuilding from source, replace `liangabby/cbt-thought-record-agent:latest` with `cbt-thought-record-agent` in the run command below.
 
 ### 4. Run the App
 
@@ -87,7 +89,7 @@ docker run --rm \
   -e TZ=Asia/Hong_Kong \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Windows PowerShell:
@@ -100,7 +102,7 @@ docker run --rm `
   -e TZ=Asia/Hong_Kong `
   -v "${PWD}/sessions:/app/sessions" `
   -v "${PWD}/reports:/app/reports" `
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Then open:
@@ -125,7 +127,7 @@ docker run --rm \
   -v "$PWD/app_settings.json:/app/app_settings.json" \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Windows PowerShell:
@@ -138,7 +140,7 @@ docker run --rm `
   -v "${PWD}/app_settings.json:/app/app_settings.json" `
   -v "${PWD}/sessions:/app/sessions" `
   -v "${PWD}/reports:/app/reports" `
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 ### 6. Optional: Use an API Instead of Ollama
@@ -166,7 +168,7 @@ docker run --rm \
   --env-file .env \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 In the app, open Settings and choose:
@@ -276,21 +278,23 @@ http://host.docker.internal:11434/api/generate
 --add-host=host.docker.internal:host-gateway
 ```
 
-### 3. 构建项目镜像
+### 3. 获取项目镜像
 
-在项目文件夹中打开 terminal：
+普通使用时，直接从 Docker Hub 拉取已经发布的镜像：
 
 ```bash
-cd path/to/tra_test
+docker pull liangabby/cbt-thought-record-agent:latest
 ```
 
-构建 Docker 镜像：
+如果不手动 pull，下面运行 `docker run` 时 Docker 也会自动下载。
+
+如果 clone 了 repository 并修改过代码，可以在项目文件夹中重新构建本地镜像：
 
 ```bash
 docker build --no-cache -t cbt-thought-record-agent .
 ```
 
-如果刚修改过前端或后端代码，建议保留 `--no-cache`，确保 Docker 使用最新代码。
+如果刚修改过前端或后端代码，建议保留 `--no-cache`，确保 Docker 使用最新代码。从源码重新构建后，运行时把下面命令里的 `liangabby/cbt-thought-record-agent:latest` 替换成 `cbt-thought-record-agent`。
 
 ### 4. 运行项目
 
@@ -303,7 +307,7 @@ docker run --rm \
   -e TZ=Asia/Hong_Kong \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Windows PowerShell：
@@ -316,7 +320,7 @@ docker run --rm `
   -e TZ=Asia/Hong_Kong `
   -v "${PWD}/sessions:/app/sessions" `
   -v "${PWD}/reports:/app/reports" `
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 然后打开：
@@ -341,7 +345,7 @@ docker run --rm \
   -v "$PWD/app_settings.json:/app/app_settings.json" \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Windows PowerShell：
@@ -354,7 +358,7 @@ docker run --rm `
   -v "${PWD}/app_settings.json:/app/app_settings.json" `
   -v "${PWD}/sessions:/app/sessions" `
   -v "${PWD}/reports:/app/reports" `
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 ### 6. 可选：使用 API 而不是 Ollama
@@ -382,7 +386,7 @@ docker run --rm \
   --env-file .env \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 在网页 Settings 中选择：

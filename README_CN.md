@@ -66,19 +66,18 @@ CBT Thought Record 是一个本地运行的 CBT 思维记录网页应用。它�
 ollama pull gemma2:9b
 ```
 
-### 2. 构建并运行
+### 2. 从 Docker Hub 运行
 
-如果是从 GitHub clone 源码，在项目根目录运行：
+创建本地数据目录，然后运行已经发布的 Docker image：
 
 ```bash
-docker build --no-cache -t cbt-thought-record-agent .
 mkdir -p sessions reports
 docker run --rm \
   -p 8000:8000 \
   -e TZ=Asia/Hong_Kong \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 然后打开：
@@ -87,7 +86,13 @@ docker run --rm \
 http://localhost:8000
 ```
 
-如果已经发布了预构建 Docker image，用户可以跳过 `docker build`，在 `docker run` 最后一行使用发布后的 image 名称。
+如果本机没有该 image，Docker 会自动从 Docker Hub 下载。
+
+Docker Hub：
+
+```text
+https://hub.docker.com/r/liangabby/cbt-thought-record-agent
+```
 
 Docker image 默认使用本机 Ollama：
 
@@ -128,7 +133,7 @@ docker run --rm \
   --env-file .env \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 在页面 Settings 中选择：
@@ -168,6 +173,14 @@ http://127.0.0.1:5173
 ```
 
 Vite dev server 会把 `/api/...` 请求代理到 `http://127.0.0.1:8000`。
+
+如果修改代码后需要重新构建 Docker image，在项目根目录运行：
+
+```bash
+docker build --no-cache -t cbt-thought-record-agent .
+```
+
+重新构建后运行时，把上面 Docker 命令里的 `liangabby/cbt-thought-record-agent:latest` 替换成 `cbt-thought-record-agent`。
 
 ## 配置说明
 

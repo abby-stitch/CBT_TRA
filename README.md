@@ -54,19 +54,18 @@ Pull the default local model:
 ollama pull gemma2:9b
 ```
 
-### 2. Build and Run
+### 2. Run from Docker Hub
 
-From the project root:
+Create local data folders and run the published image:
 
 ```bash
-docker build --no-cache -t cbt-thought-record-agent .
 mkdir -p sessions reports
 docker run --rm \
   -p 8000:8000 \
   -e TZ=Asia/Hong_Kong \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 Open:
@@ -75,7 +74,13 @@ Open:
 http://localhost:8000
 ```
 
-If a prebuilt image is published, users can skip `docker build` and replace `cbt-thought-record-agent` with the published image name in `docker run`.
+Docker will download the image automatically if it is not already on the user's machine.
+
+Docker Hub:
+
+```text
+https://hub.docker.com/r/liangabby/cbt-thought-record-agent
+```
 
 The Docker image defaults to local Ollama:
 
@@ -123,7 +128,7 @@ docker run --rm \
   --env-file .env \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
-  cbt-thought-record-agent
+  liangabby/cbt-thought-record-agent:latest
 ```
 
 In the app Settings panel:
@@ -163,6 +168,14 @@ http://127.0.0.1:5173
 ```
 
 The Vite dev server proxies `/api/...` requests to `http://127.0.0.1:8000`.
+
+To rebuild the Docker image from source after changing code:
+
+```bash
+docker build --no-cache -t cbt-thought-record-agent .
+```
+
+Then run it by replacing `liangabby/cbt-thought-record-agent:latest` with `cbt-thought-record-agent` in the Docker command above.
 
 ## Configuration
 
