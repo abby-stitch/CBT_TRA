@@ -23,6 +23,11 @@
 !uv.lock
 !Dockerfile
 
+# README screenshots.
+!docs/
+!docs/screenshots/
+!docs/screenshots/*.png
+
 # Backend source.
 !backend/
 !backend/**/*.py
