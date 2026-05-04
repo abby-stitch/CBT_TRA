@@ -1,0 +1,219 @@
+{
+  "report_id": "20260504_131744_179956",
+  "generated_at": "2026-05-04 13:17:44",
+  "scope": {
+    "mode": "custom",
+    "requested_limit": null,
+    "session_ids": [
+      "20260504_012234",
+      "20260504_022547",
+      "20260504_111003",
+      "20260504_125233"
+    ],
+    "report_type": "multi_session",
+    "date_range": {
+      "start": "2026-05-04 01:22",
+      "end": "2026-05-04 12:52"
+    }
+  },
+  "metrics": {
+    "total_sessions_in_scope": 4,
+    "average_intensity_before": 72,
+    "average_intensity_after": 46.75,
+    "average_intensity_delta": -25.25,
+    "improved_sessions": 4,
+    "top_emotions": [
+      {
+        "label": "panic",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "overwhelmed",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "doubtful",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "discouraged",
+        "count": 1,
+        "ratio": 0.25
+      }
+    ],
+    "top_distortions": [
+      {
+        "label": "Labeling",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "All-or-nothing thinking",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "Disqualifying or discounting the positive",
+        "count": 1,
+        "ratio": 0.25
+      },
+      {
+        "label": "Overgeneralization",
+        "count": 1,
+        "ratio": 0.25
+      }
+    ],
+    "emotion_trend": [
+      {
+        "session_id": "20260504_012234",
+        "date": "2026-05-04 01:22",
+        "emotion": "panic",
+        "before": 75,
+        "after": 50,
+        "delta": -25,
+        "distortions": [
+          "Labeling"
+        ]
+      },
+      {
+        "session_id": "20260504_022547",
+        "date": "2026-05-04 02:25",
+        "emotion": "overwhelmed",
+        "before": 85,
+        "after": 60,
+        "delta": -25,
+        "distortions": [
+          "All-or-nothing thinking"
+        ]
+      },
+      {
+        "session_id": "20260504_111003",
+        "date": "2026-05-04 11:10",
+        "emotion": "doubtful",
+        "before": 60,
+        "after": 35,
+        "delta": -25,
+        "distortions": [
+          "Disqualifying or discounting the positive"
+        ]
+      },
+      {
+        "session_id": "20260504_125233",
+        "date": "2026-05-04 12:52",
+        "emotion": "discouraged",
+        "before": 68,
+        "after": 42,
+        "delta": -26,
+        "distortions": [
+          "Overgeneralization"
+        ]
+      }
+    ],
+    "distortion_trends": [
+      {
+        "label": "All-or-nothing thinking",
+        "total_count": 1,
+        "earlier_count": 1,
+        "later_count": 0,
+        "direction": "down",
+        "current_streak": 0
+      },
+      {
+        "label": "Disqualifying or discounting the positive",
+        "total_count": 1,
+        "earlier_count": 0,
+        "later_count": 1,
+        "direction": "up",
+        "current_streak": 0
+      },
+      {
+        "label": "Labeling",
+        "total_count": 1,
+        "earlier_count": 1,
+        "later_count": 0,
+        "direction": "down",
+        "current_streak": 0
+      },
+      {
+        "label": "Overgeneralization",
+        "total_count": 1,
+        "earlier_count": 0,
+        "later_count": 1,
+        "direction": "up",
+        "current_streak": 1
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "session_id": "20260504_012234",
+      "date": "2026-05-04 01:22",
+      "emotion": "panic",
+      "intensity_before": 75,
+      "intensity_after": 50,
+      "intensity_delta": -25,
+      "distortions": [
+        "Labeling"
+      ],
+      "balanced_thought": "I am new, and taking time to learn does not mean I am useless. I can contribute gradually by asking better questions and finishing small tasks one by one.",
+      "session_report_url": "/reports/session/20260504_012234"
+    },
+    {
+      "session_id": "20260504_022547",
+      "date": "2026-05-04 02:25",
+      "emotion": "overwhelmed",
+      "intensity_before": 85,
+      "intensity_after": 60,
+      "intensity_delta": -25,
+      "distortions": [
+        "All-or-nothing thinking"
+      ],
+      "balanced_thought": "I do not have to do everything perfectly to still be useful. I can focus on finishing one concrete part and tell my team clearly where I am.",
+      "session_report_url": "/reports/session/20260504_022547"
+    },
+    {
+      "session_id": "20260504_111003",
+      "date": "2026-05-04 11:10",
+      "emotion": "doubtful",
+      "intensity_before": 60,
+      "intensity_after": 35,
+      "intensity_delta": -25,
+      "distortions": [
+        "Disqualifying or discounting the positive"
+      ],
+      "balanced_thought": "The feedback does not mean I am perfect, but it does show I did some things well. I can accept that and still keep improving.",
+      "session_report_url": "/reports/session/20260504_111003"
+    },
+    {
+      "session_id": "20260504_125233",
+      "date": "2026-05-04 12:52",
+      "emotion": "discouraged",
+      "intensity_before": 68,
+      "intensity_after": 42,
+      "intensity_delta": -26,
+      "distortions": [
+        "Overgeneralization"
+      ],
+      "balanced_thought": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+      "session_report_url": "/reports/session/20260504_125233"
+    }
+  ],
+  "llm_summary": "This record shows a pattern of experiencing distress related to academic and professional expectations. Emotions like panic, overwhelm, doubt, and discouragement surfaced, often connected with thoughts that involve labeling oneself negatively or seeing situations as all-or-nothing.  While there was fluctuation in the intensity and frequency of these emotions, it's encouraging to see progress made in recognizing and challenging these thought patterns, leading to a decrease in overall distress. The development of balanced thoughts provides a framework for reframing these challenges and managing anxiety more effectively.",
+  "llm_action_items": [
+    "Practice identifying your automatic thoughts when you feel distressed.",
+    "Write down a balanced thought to challenge one of your negative thoughts.",
+    "Reflect on situations where you felt successful and acknowledge your achievements."
+  ],
+  "llm_error": null,
+  "include_llm_summary": true,
+  "profile_context_used": true,
+  "report_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  }
+}

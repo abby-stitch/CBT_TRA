@@ -61,6 +61,9 @@ class MessageResponse(BaseModel):
     session_completed: bool
     record_url: str | None
     thought_record: dict[str, Any]
+    can_undo: bool = False
+    undo_count: int = 0
+    undo_limit: int = 3
 
 
 class GenerateReportRequest(BaseModel):
@@ -104,6 +107,9 @@ class ResumeSessionResponse(BaseModel):
     thought_record: dict[str, Any]
     chat_history: list[dict[str, Any]]
     conversation_llm: dict[str, Any] = Field(default_factory=dict)
+    can_undo: bool = False
+    undo_count: int = 0
+    undo_limit: int = 3
 
 
 class AppSettings(BaseModel):
@@ -144,6 +150,7 @@ def _agent_from_session_data(session_data: dict[str, Any], session_id: str, *, u
     agent.safety_state = str(session_data.get("safety_state") or "normal")
     agent.safety_reason = session_data.get("safety_reason")
     agent.last_safety_warning_turn = int(session_data.get("last_safety_warning_turn") or 0)
+    agent.undo_stack = list(session_data.get("undo_stack") or [])
     return agent
 
 
@@ -266,6 +273,9 @@ def message(req: MessageRequest) -> MessageResponse:
         session_completed=session_completed,
         record_url=record_url,
         thought_record=agent.thought_record,
+        can_undo=agent.can_undo(),
+        undo_count=agent.undo_count(),
+        undo_limit=agent.UNDO_LIMIT,
     )
 
 
@@ -321,6 +331,45 @@ def get_session(session_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Session not found.") from exc
 
 
+@app.post("/api/sessions/{session_id}/undo", response_model=ResumeSessionResponse)
+def undo_last_input(session_id: str) -> ResumeSessionResponse:
+    global _active_session_id
+    app_settings.load_settings()
+    agent = _get_or_restore_in_progress_agent(session_id)
+    if agent is None:
+        try:
+            session_data = report_service.load_session(session_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Session not found.") from exc
+        agent = _agent_from_session_data(session_data, session_id)
+
+    if not agent.undo_last_turn():
+        raise HTTPException(status_code=409, detail="There is no previous input to undo for this session.")
+
+    _agents[agent.session_id] = agent
+    if agent.session_status == "in_progress":
+        _active_session_id = agent.session_id
+    elif _active_session_id == agent.session_id:
+        _active_session_id = None
+
+    return ResumeSessionResponse(
+        session_id=agent.session_id,
+        current_step=agent.current_step,
+        session_status=agent.session_status,
+        thought_record=agent.thought_record,
+        chat_history=agent.chat_history,
+        conversation_llm={
+            "provider": agent.llm_provider,
+            "model": agent.model,
+            "url": agent.url,
+            "api_key_env_var": agent.api_key_env_var,
+        },
+        can_undo=agent.can_undo(),
+        undo_count=agent.undo_count(),
+        undo_limit=agent.UNDO_LIMIT,
+    )
+
+
 @app.post("/api/sessions/{session_id}/resume", response_model=ResumeSessionResponse)
 def resume_session(session_id: str) -> ResumeSessionResponse:
     global _active_session_id
@@ -353,6 +402,9 @@ def resume_session(session_id: str) -> ResumeSessionResponse:
             "url": agent.url,
             "api_key_env_var": agent.api_key_env_var,
         },
+        can_undo=agent.can_undo(),
+        undo_count=agent.undo_count(),
+        undo_limit=agent.UNDO_LIMIT,
     )
 
 

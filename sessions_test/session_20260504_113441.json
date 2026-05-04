@@ -1,0 +1,149 @@
+{
+  "session_id": "20260504_113441",
+  "last_updated": "2026-05-04 11:37:59",
+  "current_step": 4,
+  "session_status": "in_progress",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 11:34",
+    "situation": "I made a mistake during a presentation and kept thinking about it afterward.",
+    "emotion": "ashamed",
+    "intensity_before": 70,
+    "automatic_thought": "I should always perform perfectly, and I must never make basic mistakes.",
+    "evidence_for": [
+      "The presentation did continue",
+      "Some classmates still asked useful questions afterward",
+      "People make small mistakes in presentations all the time"
+    ],
+    "evidence_against": [
+      "I forgot one point and paused for a few seconds. It felt much longer in the moment."
+    ],
+    "distortions": [],
+    "predicted_distortion": [
+      "“Should” and “must” statements",
+      "All-or-nothing thinking"
+    ],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I made a mistake during a presentation and kept thinking about it afterward."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like that's weighing on your mind. Can you tell me what kind of feeling came up when you kept thinking about it afterward?"
+    },
+    {
+      "role": "user",
+      "content": "I felt ashamed."
+    },
+    {
+      "role": "assistant",
+      "content": "That feeling of shame is really hard to deal with. On a scale from 0 to 100, with 0 being no feelings at all and 100 being the strongest possible feeling of shame, how intense was that for you at its peak?"
+    },
+    {
+      "role": "user",
+      "content": "Around 70."
+    },
+    {
+      "role": "assistant",
+      "content": "That's understandable, feeling ashamed can be really tough.  What was going through your mind when you felt that shame at its strongest?"
+    },
+    {
+      "role": "user",
+      "content": "The thought was, \"I should always perform perfectly, and I must never make basic mistakes.\""
+    },
+    {
+      "role": "assistant",
+      "content": "That thought sounds really stressful. Can you think of any events or situations that make that thought seem believable to you?"
+    },
+    {
+      "role": "user",
+      "content": "The presentation did continue, and some classmates still asked useful questions afterward. People make small mistakes in presentations all the time."
+    },
+    {
+      "role": "assistant",
+      "content": "That's helpful.  Thinking about those facts, what evidence suggests this thought might not be completely true?"
+    },
+    {
+      "role": "user",
+      "content": "sorry, I need to change my evidence for, that will be: I forgot one point and paused for a few seconds. It felt much longer in the moment."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like that thought is really putting a lot of pressure on yourself.  \n\nCould any of these thoughts patterns apply to your automatic thought: \"I should always perform perfectly, and I must never make basic mistakes\"? \n\n* It might be \"Should\" and “must” statements because it sets up strict rules for yourself about how you *have* to perform.\n* It could also be All-or-nothing thinking since it views performance as a binary of perfect or failing, without room for in-between.\n\nWhich one(s), if any, feel like they fit your thought?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I made a mistake during a presentation and kept thinking about it afterward.",
+      "assistant": "It sounds like that's weighing on your mind. Can you tell me what kind of feeling came up when you kept thinking about it afterward?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I felt ashamed.",
+      "assistant": "That feeling of shame is really hard to deal with. On a scale from 0 to 100, with 0 being no feelings at all and 100 being the strongest possible feeling of shame, how intense was that for you at its peak?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "Around 70.",
+      "assistant": "That's understandable, feeling ashamed can be really tough.  What was going through your mind when you felt that shame at its strongest?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "The thought was, \"I should always perform perfectly, and I must never make basic mistakes.\"",
+      "assistant": "That thought sounds really stressful. Can you think of any events or situations that make that thought seem believable to you?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "The presentation did continue, and some classmates still asked useful questions afterward. People make small mistakes in presentations all the time.",
+      "assistant": "That's helpful.  Thinking about those facts, what evidence suggests this thought might not be completely true?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "sorry, I need to change my evidence for, that will be: I forgot one point and paused for a few seconds. It felt much longer in the moment.",
+      "assistant": "It sounds like that thought is really putting a lot of pressure on yourself.  \n\nCould any of these thoughts patterns apply to your automatic thought: \"I should always perform perfectly, and I must never make basic mistakes\"? \n\n* It might be \"Should\" and “must” statements because it sets up strict rules for yourself about how you *have* to perform.\n* It could also be All-or-nothing thinking since it views performance as a binary of perfect or failing, without room for in-between.\n\nWhich one(s), if any, feel like they fit your thought?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

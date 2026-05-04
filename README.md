@@ -201,6 +201,16 @@ The app stores local runtime data in:
 
 These files are ignored by git and should not be uploaded to GitHub. If example data is needed, create separate anonymized samples.
 
+## Evaluation Artifacts
+
+This repository includes a small set of evaluation materials used for the project report:
+
+- `test_case.md`: reusable manual test cases without local result notes.
+- `sessions_test/`: anonymized session JSON files generated during manual evaluation.
+- `report_test/`: saved report JSON files generated from the evaluation sessions.
+
+These folders are included so the reported results can be inspected. They are separate from the normal runtime folders `sessions/` and `reports/`, which remain ignored by git.
+
 ## Project Structure
 
 ```text
@@ -213,10 +223,12 @@ backend/
 frontend/
   src/                React frontend
   src/distortionGuide.ts  Static frontend distortion guide for instant Step 4 display
+sessions_test/        Evaluation session JSON files
+report_test/          Evaluation report JSON files
+test_case.md          Manual evaluation test cases
 Dockerfile            Single-image Docker build
 RUNNING.md            Bilingual end-user run guide
 README_CN.md          Chinese project overview
-README_DEV.md         Longer development notes
 ```
 
 ## Routes
@@ -241,5 +253,3 @@ README_DEV.md         Longer development notes
 
 - [RUNNING.md](RUNNING.md): bilingual run guide
 - [README_CN.md](README_CN.md): Chinese project overview
-- [README_DEV.md](README_DEV.md): detailed development notes
-- [demonstration.md](demonstration.md): demo and implementation record

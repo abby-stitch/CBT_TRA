@@ -24,6 +24,9 @@ export type MessageResponse = {
   session_completed: boolean;
   record_url: string | null;
   thought_record: ThoughtRecord;
+  can_undo?: boolean;
+  undo_count?: number;
+  undo_limit?: number;
 };
 
 export type ReportSession = {
@@ -114,6 +117,9 @@ export type ResumeSessionResponse = {
   thought_record: ThoughtRecord;
   chat_history: Array<{ role?: string; content?: string }>;
   conversation_llm?: LlmMetadata;
+  can_undo?: boolean;
+  undo_count?: number;
+  undo_limit?: number;
 };
 
 export type ReportScope = {

@@ -13,6 +13,7 @@
 !README_CN.md
 !RUNNING.md
 !demonstration.md
+!test_case.md
 !pyproject.toml
 !uv.lock
 !Dockerfile
@@ -21,6 +22,12 @@
 !docs/
 !docs/screenshots/
 !docs/screenshots/*.png
+
+# Evaluation artifacts for the project report.
+!sessions_test/
+!sessions_test/*.json
+!report_test/
+!report_test/*.json
 
 # Backend source.
 !backend/

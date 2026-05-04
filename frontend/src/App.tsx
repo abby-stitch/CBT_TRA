@@ -14,6 +14,7 @@ import {
   saveGeneratedReport,
   sendMessage,
   startSession,
+  undoLastInput,
   updateSettings
 } from "./api";
 import { DISTORTION_GUIDE_ITEMS } from "./distortionGuide";
@@ -144,7 +145,31 @@ function parseGeneratedReportJson(value?: string | null) {
       // Try the next candidate.
     }
   }
+
+  const synthesisMatch = text.match(/"(?:synthesis|summary|llm_summary)"\s*:\s*"((?:\\.|[^"\\])*)"/s);
+  const actionMatch = text.match(/"(?:action_items|actions)"\s*:\s*(\[.*)/s);
+  const synthesis = synthesisMatch ? decodeJsonishString(synthesisMatch[1]) : "";
+  let actionItems: string[] = [];
+  if (actionMatch) {
+    const rawActions = actionMatch[1];
+    const end = rawActions.lastIndexOf("]");
+    const candidate = end >= 0 ? rawActions.slice(0, end + 1) : rawActions;
+    try {
+      actionItems = collectActionItems(JSON.parse(candidate));
+    } catch {
+      actionItems = collectActionItems([...candidate.matchAll(/"((?:\\.|[^"\\])*)"/g)].map((match) => decodeJsonishString(match[1])));
+    }
+  }
+  if (synthesis || actionItems.length) return { synthesis, actionItems };
   return null;
+}
+
+function decodeJsonishString(value: string) {
+  try {
+    return JSON.parse(`"${value}"`).trim();
+  } catch {
+    return value.replace(/\\"/g, '"').replace(/\\n/g, "\n").trim();
+  }
 }
 
 function generatedReportText(report: Report) {
@@ -572,7 +597,12 @@ function ThoughtRecordConversation({
   recordUrl,
   error,
   logRef,
-  onSend
+  onSend,
+  onUndo,
+  canUndo,
+  isUndoing,
+  undoCount,
+  undoLimit
 }: {
   sessionId: string;
   currentStep: number | null;
@@ -586,8 +616,15 @@ function ThoughtRecordConversation({
   error: string | null;
   logRef: React.RefObject<HTMLDivElement | null>;
   onSend: () => Promise<void>;
+  onUndo: () => Promise<void>;
+  canUndo: boolean;
+  isUndoing: boolean;
+  undoCount: number;
+  undoLimit: number;
 }) {
   const showDistortionGuide = currentStep === 4;
+  const lastUserMessageId = [...messages].reverse().find((message) => message.role === "user")?.id;
+  const undoTitle = canUndo ? `Undo last input (${undoCount}/${undoLimit})` : "Nothing to undo yet";
 
   return (
     <AppFrame active="session">
@@ -612,14 +649,12 @@ function ThoughtRecordConversation({
               <span>Conversation LLM: {llmLabel(llm)}</span>
             </div>
           </div>
-          {!isSessionComplete && (
-            <div className="conversation-actions">
-              <a className="button secondary" href="/sessions">
-                <span className="material-symbols-outlined small-icon">arrow_back</span>
-                Back to Sessions
-              </a>
-            </div>
-          )}
+          <div className="conversation-actions">
+            <a className="button secondary" href="/sessions">
+              <span className="material-symbols-outlined small-icon">arrow_back</span>
+              Back to Sessions
+            </a>
+          </div>
         </header>
 
         <div className="panel chat-panel-card">
@@ -629,6 +664,8 @@ function ThoughtRecordConversation({
                 {messages.map((message) => {
                   const shouldShowGuide =
                     showDistortionGuide && message.role === "assistant" && message.id === messages[messages.length - 1]?.id;
+                  const shouldShowUndoSlot = message.role === "user" && message.id === lastUserMessageId;
+                  const undoDisabled = !canUndo || isSending || isUndoing;
                   return (
                     <div className={`msg ${message.role}`} key={message.id}>
                     {message.role === "assistant" && (
@@ -657,7 +694,23 @@ function ThoughtRecordConversation({
                           </a>
                         </div>
                       )}
-                      <div className="timestamp">{formatTime(message.createdAt)}</div>
+                      {shouldShowUndoSlot ? (
+                        <div className="message-meta-row">
+                          <button
+                            className="message-undo"
+                            type="button"
+                            aria-label="Undo last input"
+                            title={undoTitle}
+                            onClick={() => void onUndo()}
+                            disabled={undoDisabled}
+                          >
+                            <span className="material-symbols-outlined small-icon">undo</span>
+                          </button>
+                          <div className="timestamp">{formatTime(message.createdAt)}</div>
+                        </div>
+                      ) : (
+                        <div className="timestamp">{formatTime(message.createdAt)}</div>
+                      )}
                     </div>
                     {message.role === "user" && (
                       <div className={`avatar ${message.role}`}>
@@ -741,6 +794,10 @@ function HomePage() {
   const [recentRecords, setRecentRecords] = useState<ReportSession[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [undoCount, setUndoCount] = useState(0);
+  const [undoLimit, setUndoLimit] = useState(3);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [conversationLlm, setConversationLlm] = useState<LlmMetadata | null>(null);
@@ -778,6 +835,9 @@ function HomePage() {
     setCurrentStep(null);
     setIsSessionComplete(false);
     setRecordUrl(null);
+    setCanUndo(false);
+    setUndoCount(0);
+    setUndoLimit(3);
 
     try {
       const data = await startSession();
@@ -790,6 +850,9 @@ function HomePage() {
         url: settings.llm_url,
         api_key_env_var: settings.api_key_env_var
       });
+      setCanUndo(false);
+      setUndoCount(0);
+      setUndoLimit(3);
       setMessages([makeMessage("assistant", data.message)]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to start session.";
@@ -814,6 +877,9 @@ function HomePage() {
       setCurrentStep(data.current_step);
       setIsSessionComplete(data.session_completed);
       setRecordUrl(data.record_url);
+      setCanUndo(Boolean(data.can_undo));
+      setUndoCount(data.undo_count ?? 0);
+      setUndoLimit(data.undo_limit ?? 3);
       setMessages((current) => [...current, makeMessage("assistant", data.message)]);
       if (data.session_completed) {
         await refreshRecords();
@@ -824,6 +890,27 @@ function HomePage() {
       setMessages((current) => [...current, makeMessage("assistant", message)]);
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleUndo() {
+    if (!sessionId || !canUndo || isUndoing || isSending) return;
+
+    setIsUndoing(true);
+    setError(null);
+    try {
+      const data = await undoLastInput(sessionId);
+      setCurrentStep(data.current_step);
+      setIsSessionComplete(data.session_status !== "in_progress");
+      setRecordUrl(null);
+      setCanUndo(Boolean(data.can_undo));
+      setUndoCount(data.undo_count ?? 0);
+      setUndoLimit(data.undo_limit ?? 3);
+      setMessages(messagesFromHistory(data.chat_history));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not undo the previous input.");
+    } finally {
+      setIsUndoing(false);
     }
   }
 
@@ -842,6 +929,11 @@ function HomePage() {
         error={error}
         logRef={logRef}
         onSend={handleSend}
+        onUndo={handleUndo}
+        canUndo={canUndo}
+        isUndoing={isUndoing}
+        undoCount={undoCount}
+        undoLimit={undoLimit}
       />
     );
   }
@@ -1026,6 +1118,10 @@ function SessionsPage() {
   const [activeRecordUrl, setActiveRecordUrl] = useState<string | null>(null);
   const [isStartingNew, setIsStartingNew] = useState(false);
   const [isSendingActive, setIsSendingActive] = useState(false);
+  const [isUndoingActive, setIsUndoingActive] = useState(false);
+  const [canUndoActive, setCanUndoActive] = useState(false);
+  const [undoCountActive, setUndoCountActive] = useState(0);
+  const [undoLimitActive, setUndoLimitActive] = useState(3);
   const [isActiveComplete, setIsActiveComplete] = useState(false);
   const [activeConversationLlm, setActiveConversationLlm] = useState<LlmMetadata | null>(null);
   const activeLogRef = useRef<HTMLDivElement | null>(null);
@@ -1084,6 +1180,9 @@ function SessionsPage() {
     setActiveRecordUrl(null);
     setIsActiveComplete(false);
     setActiveConversationLlm(null);
+    setCanUndoActive(false);
+    setUndoCountActive(0);
+    setUndoLimitActive(3);
 
     try {
       const data = await startSession();
@@ -1096,6 +1195,9 @@ function SessionsPage() {
         url: settings.llm_url,
         api_key_env_var: settings.api_key_env_var
       });
+      setCanUndoActive(false);
+      setUndoCountActive(0);
+      setUndoLimitActive(3);
       setActiveMessages([makeMessage("assistant", data.message)]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to start session.";
@@ -1120,6 +1222,9 @@ function SessionsPage() {
       setActiveCurrentStep(data.current_step);
       setIsActiveComplete(data.session_completed);
       setActiveRecordUrl(data.record_url);
+      setCanUndoActive(Boolean(data.can_undo));
+      setUndoCountActive(data.undo_count ?? 0);
+      setUndoLimitActive(data.undo_limit ?? 3);
       setActiveMessages((current) => [...current, makeMessage("assistant", data.message)]);
       if (data.session_completed) {
         await refreshSessions();
@@ -1146,6 +1251,9 @@ function SessionsPage() {
         setActiveDraft("");
         setActiveRecordUrl(null);
         setIsActiveComplete(true);
+        setCanUndoActive(Boolean(data.can_undo));
+        setUndoCountActive(data.undo_count ?? 0);
+        setUndoLimitActive(data.undo_limit ?? 3);
         await refreshSessions();
         setSelectedId(data.session_id);
         return;
@@ -1155,6 +1263,9 @@ function SessionsPage() {
       setActiveConversationLlm(data.conversation_llm || null);
       setIsActiveComplete(false);
       setActiveRecordUrl(null);
+      setCanUndoActive(Boolean(data.can_undo));
+      setUndoCountActive(data.undo_count ?? 0);
+      setUndoLimitActive(data.undo_limit ?? 3);
       setActiveDraft("");
       const restoredMessages = messagesFromHistory(data.chat_history);
       setActiveMessages(
@@ -1164,6 +1275,28 @@ function SessionsPage() {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not resume session.");
+    }
+  }
+
+  async function handleUndoActive() {
+    if (!activeSessionId || !canUndoActive || isUndoingActive || isSendingActive) return;
+
+    setIsUndoingActive(true);
+    setError(null);
+    try {
+      const data = await undoLastInput(activeSessionId);
+      setActiveCurrentStep(data.current_step);
+      setIsActiveComplete(data.session_status !== "in_progress");
+      setActiveRecordUrl(null);
+      setCanUndoActive(Boolean(data.can_undo));
+      setUndoCountActive(data.undo_count ?? 0);
+      setUndoLimitActive(data.undo_limit ?? 3);
+      setActiveMessages(messagesFromHistory(data.chat_history));
+      await refreshSessions();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not undo the previous input.");
+    } finally {
+      setIsUndoingActive(false);
     }
   }
 
@@ -1202,6 +1335,11 @@ function SessionsPage() {
         error={error}
         logRef={activeLogRef}
         onSend={handleSendActive}
+        onUndo={handleUndoActive}
+        canUndo={canUndoActive}
+        isUndoing={isUndoingActive}
+        undoCount={undoCountActive}
+        undoLimit={undoLimitActive}
       />
     );
   }

@@ -1,0 +1,202 @@
+{
+  "session_id": "20260504_111003",
+  "last_updated": "2026-05-04 11:34:27",
+  "current_step": 7,
+  "session_status": "completed",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 11:10",
+    "situation": "I got good feedback on an assignment",
+    "emotion": "doubtful",
+    "intensity_before": 60,
+    "automatic_thought": "It probably does not count. Maybe the marker was just being generous.",
+    "evidence_for": [
+      "Part of me keeps saying the assignment was not that hard",
+      "I did use online resources while working on it"
+    ],
+    "evidence_against": [
+      "The feedback specifically said my explanation was clear",
+      "I still had to understand the topic, organize the answer, and submit something coherent"
+    ],
+    "distortions": [
+      "Disqualifying or discounting the positive"
+    ],
+    "predicted_distortion": [
+      "Disqualifying or discounting the positive",
+      "Magnification/minimization"
+    ],
+    "balanced_thought": "The feedback does not mean I am perfect, but it does show I did some things well. I can accept that and still keep improving.",
+    "intensity_after": 35,
+    "summary": "It sounds like you've done some great work reflecting on this situation. You acknowledged the positive feedback and identified the \"disqualifying or discounting the positive\" thought that was causing you distress. By weighing the evidence for and against that thought and coming up with a balanced perspective, you were able to lower your intensity from 60 to 35.  That's really good progress!"
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I got good feedback on an assignment, but somehow it did not make me feel proud."
+    },
+    {
+      "role": "assistant",
+      "content": "That's interesting—it sounds like you were expecting to feel proud but didn't quite get there.  Can you tell me what feeling came up instead?"
+    },
+    {
+      "role": "user",
+      "content": "I felt doubtful."
+    },
+    {
+      "role": "assistant",
+      "content": "That's understandable. Doubt can sometimes feel really heavy. On a scale of 0 to 100, with 0 being not at all and 100 being the strongest you've ever felt it, how strong was that feeling of doubt at its peak?"
+    },
+    {
+      "role": "user",
+      "content": "The doubt was around 60."
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense—doubt can feel really heavy.  What kind of thought went through your mind at that moment when you felt this doubt?"
+    },
+    {
+      "role": "user",
+      "content": "The thought was, \"It probably does not count. Maybe the marker was just being generous.\""
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense—doubt can be really tough to deal with. What are some things that make that thought about it not counting seem believable?"
+    },
+    {
+      "role": "user",
+      "content": "Part of me keeps saying the assignment was not that hard, and I did use online resources while working on it."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're considering a few things that might make this good feedback feel less certain.  What are some facts or observations that suggest your assignment *was* worthwhile, regardless of how challenging it felt?"
+    },
+    {
+      "role": "user",
+      "content": "But I still had to understand the topic, organize the answer, and submit something coherent. The feedback specifically said my explanation was clear."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're weighing some important things here.  Could any of these thought patterns be fitting what you're experiencing:\n\n* **Disqualifying or discounting the positive:** You might be minimizing the value of the good feedback, perhaps by focusing on easier parts of the assignment. \n* **Magnification/minimization:** It could be that you're magnifying the doubts about your work while minimizing the positive aspects and efforts you put in.\n\nDoes either of those resonate with you?"
+    },
+    {
+      "role": "user",
+      "content": "Discounting the positive fits. I got good feedback, but I am trying to explain it away instead of letting it count."
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense—it's common to try and explain away good things sometimes.  Considering that, what might be a more balanced thought about this feedback than “it probably doesn’t count”?"
+    },
+    {
+      "role": "user",
+      "content": "The feedback does not mean I am perfect, but it does show I did some things well. I can accept that and still keep improving."
+    },
+    {
+      "role": "assistant",
+      "content": "That's a good thought—it sounds like you're starting to see this feedback in a more balanced way. How is that feeling of doubt weighing on you now, after considering your balanced thought? Would you say it's lessened at all?"
+    },
+    {
+      "role": "user",
+      "content": "It is about 35 now."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you've done some great work reflecting on this situation. You acknowledged the positive feedback and identified the \"disqualifying or discounting the positive\" thought that was causing you distress. By weighing the evidence for and against that thought and coming up with a balanced perspective, you were able to lower your intensity from 60 to 35.  That's really good progress!"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I got good feedback on an assignment, but somehow it did not make me feel proud.",
+      "assistant": "That's interesting—it sounds like you were expecting to feel proud but didn't quite get there.  Can you tell me what feeling came up instead?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I felt doubtful.",
+      "assistant": "That's understandable. Doubt can sometimes feel really heavy. On a scale of 0 to 100, with 0 being not at all and 100 being the strongest you've ever felt it, how strong was that feeling of doubt at its peak?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "The doubt was around 60.",
+      "assistant": "That makes sense—doubt can feel really heavy.  What kind of thought went through your mind at that moment when you felt this doubt?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "The thought was, \"It probably does not count. Maybe the marker was just being generous.\"",
+      "assistant": "That makes sense—doubt can be really tough to deal with. What are some things that make that thought about it not counting seem believable?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "Part of me keeps saying the assignment was not that hard, and I did use online resources while working on it.",
+      "assistant": "It sounds like you're considering a few things that might make this good feedback feel less certain.  What are some facts or observations that suggest your assignment *was* worthwhile, regardless of how challenging it felt?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "But I still had to understand the topic, organize the answer, and submit something coherent. The feedback specifically said my explanation was clear.",
+      "assistant": "It sounds like you're weighing some important things here.  Could any of these thought patterns be fitting what you're experiencing:\n\n* **Disqualifying or discounting the positive:** You might be minimizing the value of the good feedback, perhaps by focusing on easier parts of the assignment. \n* **Magnification/minimization:** It could be that you're magnifying the doubts about your work while minimizing the positive aspects and efforts you put in.\n\nDoes either of those resonate with you?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "Discounting the positive fits. I got good feedback, but I am trying to explain it away instead of letting it count.",
+      "assistant": "That makes sense—it's common to try and explain away good things sometimes.  Considering that, what might be a more balanced thought about this feedback than “it probably doesn’t count”?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 5,
+      "step_after": 6,
+      "user": "The feedback does not mean I am perfect, but it does show I did some things well. I can accept that and still keep improving.",
+      "assistant": "That's a good thought—it sounds like you're starting to see this feedback in a more balanced way. How is that feeling of doubt weighing on you now, after considering your balanced thought? Would you say it's lessened at all?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 6,
+      "step_after": 7,
+      "user": "It is about 35 now.",
+      "assistant": "It sounds like you've done some great work reflecting on this situation. You acknowledged the positive feedback and identified the \"disqualifying or discounting the positive\" thought that was causing you distress. By weighing the evidence for and against that thought and coming up with a balanced perspective, you were able to lower your intensity from 60 to 35.  That's really good progress!",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

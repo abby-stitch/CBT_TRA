@@ -1,0 +1,297 @@
+{
+  "session_id": "20260504_130445",
+  "last_updated": "2026-05-04 13:06:50",
+  "current_step": 2,
+  "session_status": "in_progress",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 13:04",
+    "situation": "I have a deadline tomorrow, and I keep putting it off.",
+    "emotion": "stressed",
+    "intensity_before": 60,
+    "automatic_thought": "I will mess this up and disappoint my supervisor.",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I have a deadline tomorrow, and I keep putting it off."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?"
+    },
+    {
+      "role": "user",
+      "content": "I feel stressed."
+    },
+    {
+      "role": "assistant",
+      "content": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?"
+    },
+    {
+      "role": "user",
+      "content": "Around 60."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand. Now, thinking about that moment when you realized you were putting it off, what was going through your mind? What kind of thought popped up at that time?"
+    },
+    {
+      "role": "user",
+      "content": "The thought is, \"I will mess this up and disappoint my supervisor.\""
+    },
+    {
+      "role": "assistant",
+      "content": "What are some things that make this thought feel believable to you right now?"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I have a deadline tomorrow, and I keep putting it off.",
+      "assistant": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I feel stressed.",
+      "assistant": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "Around 60.",
+      "assistant": "I understand. Now, thinking about that moment when you realized you were putting it off, what was going through your mind? What kind of thought popped up at that time?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "The thought is, \"I will mess this up and disappoint my supervisor.\"",
+      "assistant": "What are some things that make this thought feel believable to you right now?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ],
+  "undo_stack": [
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 13:04",
+        "situation": "I have a deadline tomorrow, and I keep putting it off.",
+        "emotion": "",
+        "intensity_before": 0,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I have a deadline tomorrow, and I keep putting it off."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I have a deadline tomorrow, and I keep putting it off.",
+          "assistant": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    },
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 13:04",
+        "situation": "I have a deadline tomorrow, and I keep putting it off.",
+        "emotion": "stressed",
+        "intensity_before": 0,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I have a deadline tomorrow, and I keep putting it off."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?"
+        },
+        {
+          "role": "user",
+          "content": "I feel stressed."
+        },
+        {
+          "role": "assistant",
+          "content": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I have a deadline tomorrow, and I keep putting it off.",
+          "assistant": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I feel stressed.",
+          "assistant": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    },
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 13:04",
+        "situation": "I have a deadline tomorrow, and I keep putting it off.",
+        "emotion": "stressed",
+        "intensity_before": 60,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I have a deadline tomorrow, and I keep putting it off."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?"
+        },
+        {
+          "role": "user",
+          "content": "I feel stressed."
+        },
+        {
+          "role": "assistant",
+          "content": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?"
+        },
+        {
+          "role": "user",
+          "content": "Around 60."
+        },
+        {
+          "role": "assistant",
+          "content": "I understand. Now, thinking about that moment when you realized you were putting it off, what was going through your mind? What kind of thought popped up at that time?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I have a deadline tomorrow, and I keep putting it off.",
+          "assistant": "That sounds stressful.  What was the feeling you had when you realized you kept putting it off? Did you feel anxious, frustrated, worried, or something else entirely?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I feel stressed.",
+          "assistant": "On a scale of 0 to 100, with 0 being not at all stressed and 100 being extremely stressed, how strong was that feeling when you realized you kept putting it off?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "Around 60.",
+          "assistant": "I understand. Now, thinking about that moment when you realized you were putting it off, what was going through your mind? What kind of thought popped up at that time?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    }
+  ]
+}

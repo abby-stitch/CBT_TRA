@@ -1,0 +1,148 @@
+{
+  "session_id": "20260504_130959",
+  "last_updated": "2026-05-04 13:10:37",
+  "current_step": 1,
+  "session_status": "stopped",
+  "safety_state": "supportive_warning",
+  "safety_reason": "User expresses not wanting to continue, could indicate distress",
+  "last_safety_warning_turn": 1,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 13:09",
+    "situation": "",
+    "emotion": "",
+    "intensity_before": 0,
+    "automatic_thought": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I am feeling stressed about tomorrow, but I do not really want to continue this right now."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're feeling overwhelmed right now. It's okay to take a break if you need it. If you're up for continuing, what was happening specifically that made you feel stressed about tomorrow?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
+    },
+    {
+      "role": "user",
+      "content": "stop"
+    },
+    {
+      "role": "assistant",
+      "content": "No problem. We can stop here for now. Your current progress will be kept, and you can continue later if you want."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I am feeling stressed about tomorrow, but I do not really want to continue this right now.",
+      "assistant": "It sounds like you're feeling overwhelmed right now. It's okay to take a break if you need it. If you're up for continuing, what was happening specifically that made you feel stressed about tomorrow?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support.",
+      "risk_state": "supportive_warning",
+      "risk_reason": "User expresses not wanting to continue, could indicate distress",
+      "include_safety_note": true
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "stop",
+      "assistant": "No problem. We can stop here for now. Your current progress will be kept, and you can continue later if you want.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ],
+  "undo_stack": [
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 13:09",
+        "situation": "",
+        "emotion": "",
+        "intensity_before": 0,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        }
+      ],
+      "turns": []
+    },
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "supportive_warning",
+      "safety_reason": "User expresses not wanting to continue, could indicate distress",
+      "last_safety_warning_turn": 1,
+      "thought_record": {
+        "date": "2026-05-04 13:09",
+        "situation": "",
+        "emotion": "",
+        "intensity_before": 0,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I am feeling stressed about tomorrow, but I do not really want to continue this right now."
+        },
+        {
+          "role": "assistant",
+          "content": "It sounds like you're feeling overwhelmed right now. It's okay to take a break if you need it. If you're up for continuing, what was happening specifically that made you feel stressed about tomorrow?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I am feeling stressed about tomorrow, but I do not really want to continue this right now.",
+          "assistant": "It sounds like you're feeling overwhelmed right now. It's okay to take a break if you need it. If you're up for continuing, what was happening specifically that made you feel stressed about tomorrow?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support.",
+          "risk_state": "supportive_warning",
+          "risk_reason": "User expresses not wanting to continue, could indicate distress",
+          "include_safety_note": true
+        }
+      ]
+    }
+  ]
+}

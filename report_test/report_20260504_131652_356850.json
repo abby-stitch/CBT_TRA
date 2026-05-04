@@ -1,0 +1,176 @@
+{
+  "report_id": "20260504_131652_356850",
+  "generated_at": "2026-05-04 13:16:52",
+  "scope": {
+    "mode": "recent",
+    "requested_limit": 3,
+    "session_ids": [
+      "20260504_111003",
+      "20260504_120132",
+      "20260504_125233"
+    ],
+    "report_type": "multi_session",
+    "date_range": {
+      "start": "2026-05-04 11:10",
+      "end": "2026-05-04 12:52"
+    }
+  },
+  "metrics": {
+    "total_sessions_in_scope": 3,
+    "average_intensity_before": 66,
+    "average_intensity_after": 40.67,
+    "average_intensity_delta": -25.33,
+    "improved_sessions": 3,
+    "top_emotions": [
+      {
+        "label": "doubtful",
+        "count": 1,
+        "ratio": 0.33
+      },
+      {
+        "label": "ashamed",
+        "count": 1,
+        "ratio": 0.33
+      },
+      {
+        "label": "discouraged",
+        "count": 1,
+        "ratio": 0.33
+      }
+    ],
+    "top_distortions": [
+      {
+        "label": "Disqualifying or discounting the positive",
+        "count": 1,
+        "ratio": 0.33
+      },
+      {
+        "label": "“Should” and “must” statements",
+        "count": 1,
+        "ratio": 0.33
+      },
+      {
+        "label": "Overgeneralization",
+        "count": 1,
+        "ratio": 0.33
+      }
+    ],
+    "emotion_trend": [
+      {
+        "session_id": "20260504_111003",
+        "date": "2026-05-04 11:10",
+        "emotion": "doubtful",
+        "before": 60,
+        "after": 35,
+        "delta": -25,
+        "distortions": [
+          "Disqualifying or discounting the positive"
+        ]
+      },
+      {
+        "session_id": "20260504_120132",
+        "date": "2026-05-04 12:01",
+        "emotion": "ashamed",
+        "before": 70,
+        "after": 45,
+        "delta": -25,
+        "distortions": [
+          "“Should” and “must” statements"
+        ]
+      },
+      {
+        "session_id": "20260504_125233",
+        "date": "2026-05-04 12:52",
+        "emotion": "discouraged",
+        "before": 68,
+        "after": 42,
+        "delta": -26,
+        "distortions": [
+          "Overgeneralization"
+        ]
+      }
+    ],
+    "distortion_trends": [
+      {
+        "label": "Disqualifying or discounting the positive",
+        "total_count": 1,
+        "earlier_count": 1,
+        "later_count": 0,
+        "direction": "down",
+        "current_streak": 0
+      },
+      {
+        "label": "Overgeneralization",
+        "total_count": 1,
+        "earlier_count": 0,
+        "later_count": 1,
+        "direction": "up",
+        "current_streak": 1
+      },
+      {
+        "label": "“Should” and “must” statements",
+        "total_count": 1,
+        "earlier_count": 0,
+        "later_count": 1,
+        "direction": "up",
+        "current_streak": 0
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "session_id": "20260504_111003",
+      "date": "2026-05-04 11:10",
+      "emotion": "doubtful",
+      "intensity_before": 60,
+      "intensity_after": 35,
+      "intensity_delta": -25,
+      "distortions": [
+        "Disqualifying or discounting the positive"
+      ],
+      "balanced_thought": "The feedback does not mean I am perfect, but it does show I did some things well. I can accept that and still keep improving.",
+      "session_report_url": "/reports/session/20260504_111003"
+    },
+    {
+      "session_id": "20260504_120132",
+      "date": "2026-05-04 12:01",
+      "emotion": "ashamed",
+      "intensity_before": 70,
+      "intensity_after": 45,
+      "intensity_delta": -25,
+      "distortions": [
+        "“Should” and “must” statements"
+      ],
+      "balanced_thought": "I would like to present clearly, but I do not have to be perfect. A pause or one missed point is uncomfortable, but it does not mean I failed.",
+      "session_report_url": "/reports/session/20260504_120132"
+    },
+    {
+      "session_id": "20260504_125233",
+      "date": "2026-05-04 12:52",
+      "emotion": "discouraged",
+      "intensity_before": 68,
+      "intensity_after": 42,
+      "intensity_delta": -26,
+      "distortions": [
+        "Overgeneralization"
+      ],
+      "balanced_thought": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+      "session_report_url": "/reports/session/20260504_125233"
+    }
+  ],
+  "llm_summary": "This report shows a clear trend of reduced emotional intensity over the three sessions. You effectively identified and challenged thought patterns that contributed to feelings of doubt, shame, and discouragement. The use of balanced thoughts helped shift perspectives from negative assumptions to more realistic and accepting views.  While 'overgeneralization' seems to be emerging as a new challenge, the reduction in 'disqualifying or discounting the positive' suggests you are becoming more aware of your strengths and accomplishments.",
+  "llm_action_items": [
+    "When you feel doubt creeping in, list 3 recent achievements, no matter how small.",
+    "Practice identifying the specific situations that trigger feelings of shame and write down a balanced thought for each.",
+    "Before assuming you’ve failed at something, consider all the factors involved and acknowledge any progress made."
+  ],
+  "llm_error": null,
+  "include_llm_summary": true,
+  "profile_context_used": true,
+  "report_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  }
+}

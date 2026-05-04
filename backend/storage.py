@@ -18,6 +18,7 @@ def save_session(
     sessions_dir: str = "sessions",
     user_context: str = "",
     conversation_llm: dict[str, Any] | None = None,
+    undo_stack: list[dict[str, Any]] | None = None,
 ) -> str:
     os.makedirs(sessions_dir, exist_ok=True)
     session_data = {
@@ -33,6 +34,7 @@ def save_session(
         "thought_record": thought_record,
         "chat_history": chat_history,
         "turns": turns,
+        "undo_stack": undo_stack or [],
     }
     file_path = f"{sessions_dir}/session_{session_id}.json"
     with open(file_path, "w", encoding="utf-8") as f:

@@ -212,7 +212,17 @@ LLM_URL=http://host.docker.internal:11434/api/generate
 - `app_settings.json`
 - `.env`
 
-这些文件都不应该上传 GitHub。如果需要示例数据，应单独创建匿名化样例。
+这些运行时文件都不应该上传 GitHub。如果需要示例数据，应单独创建匿名化样例。
+
+## 测试结果文件
+
+本 repository 中包含一小组用于项目报告的 evaluation materials：
+
+- `test_case.md`：整理后的手动测试样例，不包含本地测试 notes。
+- `sessions_test/`：手动评估时生成的匿名化 session JSON。
+- `report_test/`：根据测试 session 生成并保存的 report JSON。
+
+这些文件用于说明和复查 report 中的 evaluation results。它们和正常运行时的 `sessions/`、`reports/` 分开；正常运行时数据仍然被 git ignore。
 
 ## 项目结构
 
@@ -226,10 +236,12 @@ backend/
 frontend/
   src/                React 前端
   src/distortionGuide.ts  Step 4 和顶部书本入口使用的静态 distortion guide
+sessions_test/        Evaluation session JSON 文件
+report_test/          Evaluation report JSON 文件
+test_case.md          手动测试样例
 Dockerfile            单镜像 Docker 打包
 RUNNING.md            中英文用户运行指南
 README.md             英文项目说明
-README_DEV.md         更详细的开发记录
 ```
 
 ## 主要页面
@@ -255,5 +267,3 @@ README_DEV.md         更详细的开发记录
 
 - [README.md](README.md)：英文项目说明
 - [RUNNING.md](RUNNING.md)：中英文运行指南
-- [README_DEV.md](README_DEV.md)：更详细的开发说明
-- [demonstration.md](demonstration.md)：当前实现和 demo 记录

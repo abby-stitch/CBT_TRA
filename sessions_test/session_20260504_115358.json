@@ -1,0 +1,38 @@
+{
+  "session_id": "20260504_115358",
+  "last_updated": "2026-05-04 11:57:34",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 11:53",
+    "situation": "",
+    "emotion": "",
+    "intensity_before": 0,
+    "automatic_thought": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    }
+  ],
+  "turns": [],
+  "undo_stack": []
+}

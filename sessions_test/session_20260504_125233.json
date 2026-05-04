@@ -1,0 +1,615 @@
+{
+  "session_id": "20260504_125233",
+  "last_updated": "2026-05-04 13:03:46",
+  "current_step": 7,
+  "session_status": "completed",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 12:52",
+    "situation": "I got a bad quiz result today",
+    "emotion": "discouraged",
+    "intensity_before": 68,
+    "automatic_thought": "If I failed this quiz, I am just bad at this subject.",
+    "evidence_for": [
+      "The quiz score was low",
+      "I did make mistakes on questions that should have been familiar"
+    ],
+    "evidence_against": [
+      "It was only one quiz.",
+      "I did okay on earlier homework",
+      "I know I rushed my revision this time"
+    ],
+    "distortions": [
+      "Overgeneralization"
+    ],
+    "predicted_distortion": [
+      "All-or-nothing thinking",
+      "Emotional reasoning"
+    ],
+    "balanced_thought": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+    "intensity_after": 42,
+    "summary": "It sounds like you've done a great job identifying the unhelpful thought pattern here and coming up with a more balanced perspective. Recognizing that one quiz doesn't define your whole ability in this subject is really helpful.  You also acknowledged some contributing factors to the quiz result, which shows self-awareness. This kind of reflection can make a big difference in managing these feelings of discouragement. It's good to see your intensity level reduced after working through this."
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I got a bad quiz result today, and it has been bothering me more than I expected."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?"
+    },
+    {
+      "role": "user",
+      "content": "I think the main emotion is discouraged. It was around 68 out of 100."
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?"
+    },
+    {
+      "role": "user",
+      "content": "The thought was, \"If I failed this quiz, I am just bad at this subject.\""
+    },
+    {
+      "role": "assistant",
+      "content": "What are some things that make that thought seem true to you right now?"
+    },
+    {
+      "role": "user",
+      "content": "The quiz score was low, and I did make mistakes on questions that should have been familiar."
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?"
+    },
+    {
+      "role": "user",
+      "content": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?"
+    },
+    {
+      "role": "user",
+      "content": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject."
+    },
+    {
+      "role": "assistant",
+      "content": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?"
+    },
+    {
+      "role": "user",
+      "content": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully."
+    },
+    {
+      "role": "assistant",
+      "content": "That's a good and balanced way to look at things.  How intense are you feeling about this situation now?"
+    },
+    {
+      "role": "user",
+      "content": "It is about 42 now."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you've done a great job identifying the unhelpful thought pattern here and coming up with a more balanced perspective. Recognizing that one quiz doesn't define your whole ability in this subject is really helpful.  You also acknowledged some contributing factors to the quiz result, which shows self-awareness. This kind of reflection can make a big difference in managing these feelings of discouragement. It's good to see your intensity level reduced after working through this."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I got a bad quiz result today, and it has been bothering me more than I expected.",
+      "assistant": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I think the main emotion is discouraged. It was around 68 out of 100.",
+      "assistant": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "The thought was, \"If I failed this quiz, I am just bad at this subject.\"",
+      "assistant": "What are some things that make that thought seem true to you right now?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "The quiz score was low, and I did make mistakes on questions that should have been familiar.",
+      "assistant": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time.",
+      "assistant": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject.",
+      "assistant": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 5,
+      "step_after": 6,
+      "user": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+      "assistant": "That's a good and balanced way to look at things.  How intense are you feeling about this situation now?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 6,
+      "step_after": 7,
+      "user": "It is about 42 now.",
+      "assistant": "It sounds like you've done a great job identifying the unhelpful thought pattern here and coming up with a more balanced perspective. Recognizing that one quiz doesn't define your whole ability in this subject is really helpful.  You also acknowledged some contributing factors to the quiz result, which shows self-awareness. This kind of reflection can make a big difference in managing these feelings of discouragement. It's good to see your intensity level reduced after working through this.",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ],
+  "undo_stack": [
+    {
+      "current_step": 4,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 12:52",
+        "situation": "I got a bad quiz result today",
+        "emotion": "discouraged",
+        "intensity_before": 68,
+        "automatic_thought": "If I failed this quiz, I am just bad at this subject.",
+        "evidence_for": [
+          "The quiz score was low",
+          "I did make mistakes on questions that should have been familiar"
+        ],
+        "evidence_against": [
+          "It was only one quiz.",
+          "I did okay on earlier homework",
+          "I know I rushed my revision this time"
+        ],
+        "distortions": [],
+        "predicted_distortion": [
+          "All-or-nothing thinking",
+          "Emotional reasoning"
+        ],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I got a bad quiz result today, and it has been bothering me more than I expected."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?"
+        },
+        {
+          "role": "user",
+          "content": "I think the main emotion is discouraged. It was around 68 out of 100."
+        },
+        {
+          "role": "assistant",
+          "content": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?"
+        },
+        {
+          "role": "user",
+          "content": "The thought was, \"If I failed this quiz, I am just bad at this subject.\""
+        },
+        {
+          "role": "assistant",
+          "content": "What are some things that make that thought seem true to you right now?"
+        },
+        {
+          "role": "user",
+          "content": "The quiz score was low, and I did make mistakes on questions that should have been familiar."
+        },
+        {
+          "role": "assistant",
+          "content": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?"
+        },
+        {
+          "role": "user",
+          "content": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time."
+        },
+        {
+          "role": "assistant",
+          "content": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I got a bad quiz result today, and it has been bothering me more than I expected.",
+          "assistant": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I think the main emotion is discouraged. It was around 68 out of 100.",
+          "assistant": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 2,
+          "user": "The thought was, \"If I failed this quiz, I am just bad at this subject.\"",
+          "assistant": "What are some things that make that thought seem true to you right now?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 2,
+          "step_after": 3,
+          "user": "The quiz score was low, and I did make mistakes on questions that should have been familiar.",
+          "assistant": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 3,
+          "step_after": 4,
+          "user": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time.",
+          "assistant": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    },
+    {
+      "current_step": 5,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 12:52",
+        "situation": "I got a bad quiz result today",
+        "emotion": "discouraged",
+        "intensity_before": 68,
+        "automatic_thought": "If I failed this quiz, I am just bad at this subject.",
+        "evidence_for": [
+          "The quiz score was low",
+          "I did make mistakes on questions that should have been familiar"
+        ],
+        "evidence_against": [
+          "It was only one quiz.",
+          "I did okay on earlier homework",
+          "I know I rushed my revision this time"
+        ],
+        "distortions": [
+          "Overgeneralization"
+        ],
+        "predicted_distortion": [
+          "All-or-nothing thinking",
+          "Emotional reasoning"
+        ],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I got a bad quiz result today, and it has been bothering me more than I expected."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?"
+        },
+        {
+          "role": "user",
+          "content": "I think the main emotion is discouraged. It was around 68 out of 100."
+        },
+        {
+          "role": "assistant",
+          "content": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?"
+        },
+        {
+          "role": "user",
+          "content": "The thought was, \"If I failed this quiz, I am just bad at this subject.\""
+        },
+        {
+          "role": "assistant",
+          "content": "What are some things that make that thought seem true to you right now?"
+        },
+        {
+          "role": "user",
+          "content": "The quiz score was low, and I did make mistakes on questions that should have been familiar."
+        },
+        {
+          "role": "assistant",
+          "content": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?"
+        },
+        {
+          "role": "user",
+          "content": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time."
+        },
+        {
+          "role": "assistant",
+          "content": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?"
+        },
+        {
+          "role": "user",
+          "content": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject."
+        },
+        {
+          "role": "assistant",
+          "content": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I got a bad quiz result today, and it has been bothering me more than I expected.",
+          "assistant": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I think the main emotion is discouraged. It was around 68 out of 100.",
+          "assistant": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 2,
+          "user": "The thought was, \"If I failed this quiz, I am just bad at this subject.\"",
+          "assistant": "What are some things that make that thought seem true to you right now?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 2,
+          "step_after": 3,
+          "user": "The quiz score was low, and I did make mistakes on questions that should have been familiar.",
+          "assistant": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 3,
+          "step_after": 4,
+          "user": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time.",
+          "assistant": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 4,
+          "step_after": 5,
+          "user": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject.",
+          "assistant": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    },
+    {
+      "current_step": 6,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 12:52",
+        "situation": "I got a bad quiz result today",
+        "emotion": "discouraged",
+        "intensity_before": 68,
+        "automatic_thought": "If I failed this quiz, I am just bad at this subject.",
+        "evidence_for": [
+          "The quiz score was low",
+          "I did make mistakes on questions that should have been familiar"
+        ],
+        "evidence_against": [
+          "It was only one quiz.",
+          "I did okay on earlier homework",
+          "I know I rushed my revision this time"
+        ],
+        "distortions": [
+          "Overgeneralization"
+        ],
+        "predicted_distortion": [
+          "All-or-nothing thinking",
+          "Emotional reasoning"
+        ],
+        "balanced_thought": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        },
+        {
+          "role": "user",
+          "content": "I got a bad quiz result today, and it has been bothering me more than I expected."
+        },
+        {
+          "role": "assistant",
+          "content": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?"
+        },
+        {
+          "role": "user",
+          "content": "I think the main emotion is discouraged. It was around 68 out of 100."
+        },
+        {
+          "role": "assistant",
+          "content": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?"
+        },
+        {
+          "role": "user",
+          "content": "The thought was, \"If I failed this quiz, I am just bad at this subject.\""
+        },
+        {
+          "role": "assistant",
+          "content": "What are some things that make that thought seem true to you right now?"
+        },
+        {
+          "role": "user",
+          "content": "The quiz score was low, and I did make mistakes on questions that should have been familiar."
+        },
+        {
+          "role": "assistant",
+          "content": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?"
+        },
+        {
+          "role": "user",
+          "content": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time."
+        },
+        {
+          "role": "assistant",
+          "content": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?"
+        },
+        {
+          "role": "user",
+          "content": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject."
+        },
+        {
+          "role": "assistant",
+          "content": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?"
+        },
+        {
+          "role": "user",
+          "content": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully."
+        },
+        {
+          "role": "assistant",
+          "content": "That's a good and balanced way to look at things.  How intense are you feeling about this situation now?"
+        }
+      ],
+      "turns": [
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I got a bad quiz result today, and it has been bothering me more than I expected.",
+          "assistant": "That sounds really frustrating.  Can you tell me what emotion this bad quiz result brought up for you?  And how intense was that feeling at the time?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 1,
+          "user": "I think the main emotion is discouraged. It was around 68 out of 100.",
+          "assistant": "That makes sense. When you got that quiz result, what was going through your mind at the worst moment?  What thought really stood out to you?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 1,
+          "step_after": 2,
+          "user": "The thought was, \"If I failed this quiz, I am just bad at this subject.\"",
+          "assistant": "What are some things that make that thought seem true to you right now?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 2,
+          "step_after": 3,
+          "user": "The quiz score was low, and I did make mistakes on questions that should have been familiar.",
+          "assistant": "Okay, I understand those points make that thought seem true to you right now.  What are some things that might challenge that thought? Maybe facts that suggest it isn't completely true?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 3,
+          "step_after": 4,
+          "user": "It was only one quiz. I did okay on earlier homework, and I know I rushed my revision this time.",
+          "assistant": "It sounds like you're trying to balance some different perspectives on this quiz. Based on your thought, here are a few cognitive distortions that *might* be at play:  All-or-nothing thinking could mean you feel like one bad quiz means you're entirely \"bad\" at the subject. Emotional reasoning might suggest that because *you feel* discouraged, it must truly mean you lack ability in this area. Do any of these resonate with your experience?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 4,
+          "step_after": 5,
+          "user": "Overgeneralization fits because I am taking one quiz and turning it into a conclusion about the whole subject.",
+          "assistant": "That's helpful to recognize! Overgeneralization can make things seem much worse than they are.  Can you think of a more balanced way to look at this quiz result, considering both what happened and that it's just one piece of your overall progress in this subject?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        },
+        {
+          "step_before": 5,
+          "step_after": 6,
+          "user": "This quiz shows I need to review some topics, but it does not prove I am bad at the whole subject. I can identify the weak areas and study them more carefully.",
+          "assistant": "That's a good and balanced way to look at things.  How intense are you feeling about this situation now?",
+          "risk_state": "normal",
+          "risk_reason": null,
+          "include_safety_note": false
+        }
+      ]
+    }
+  ]
+}

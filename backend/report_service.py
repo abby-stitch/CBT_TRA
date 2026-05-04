@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -351,6 +352,8 @@ def _parse_report_summary_json(raw: str) -> dict[str, Any] | None:
     end = text.rfind("}")
     if start >= 0 and end >= start:
         candidates.append(text[start : end + 1])
+    elif start >= 0:
+        candidates.append(text[start:] + "}")
 
     for candidate in candidates:
         try:
@@ -362,6 +365,33 @@ def _parse_report_summary_json(raw: str) -> dict[str, Any] | None:
         except Exception:
             continue
     return None
+
+
+def _extract_report_summary_loose(raw: str) -> dict[str, Any] | None:
+    text = raw.strip()
+    if not text:
+        return None
+
+    out: dict[str, Any] = {}
+    synthesis_match = re.search(r'"(?:synthesis|summary|llm_summary)"\s*:\s*"((?:\\.|[^"\\])*)"', text, re.DOTALL)
+    if synthesis_match:
+        try:
+            out["synthesis"] = json.loads(f'"{synthesis_match.group(1)}"')
+        except Exception:
+            out["synthesis"] = synthesis_match.group(1).replace('\\"', '"').strip()
+
+    action_match = re.search(r'"(?:action_items|actions)"\s*:\s*(\[.*)', text, re.DOTALL)
+    if action_match:
+        candidate = action_match.group(1).strip()
+        end = candidate.rfind("]")
+        if end >= 0:
+            candidate = candidate[: end + 1]
+        try:
+            out["action_items"] = json.loads(candidate)
+        except Exception:
+            out["action_items"] = re.findall(r'"((?:\\.|[^"\\])*)"', candidate)
+
+    return out if out else None
 
 
 def _clean_report_action_items(value: Any) -> list[str]:
@@ -441,7 +471,7 @@ Required shape:
     if raw.startswith("Error:"):
         return None, [], raw
 
-    data = _parse_report_summary_json(raw)
+    data = _parse_report_summary_json(raw) or _extract_report_summary_loose(raw)
     if data:
         synthesis = data.get("synthesis") or data.get("summary") or data.get("llm_summary")
         action_items = data.get("action_items") or data.get("actions") or []

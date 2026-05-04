@@ -1,6 +1,7 @@
 import json
 import re
 import os
+from copy import deepcopy
 from datetime import datetime
 
 from backend.prompts import CBTPrompts
@@ -19,6 +20,8 @@ def _require_config_str(name: str) -> str:
     return value.strip()
 
 class CBTAgent:
+    UNDO_LIMIT = 3
+
     def __init__(
         self,
         step=1,
@@ -47,6 +50,7 @@ class CBTAgent:
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.chat_history = []  # message-level history: [{role, content}]
         self.turns = []         # turn-level history: [{step, assistant_ask, user, assistant_reply}]
+        self.undo_stack = []     # state snapshots before each user turn
         
         self.thought_record = initial_record or {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -281,8 +285,43 @@ TASK:
                 "url": self.url,
                 "api_key_env_var": self.api_key_env_var,
             },
+            undo_stack=self.undo_stack,
         )
         self._debug_log("SESSION_SAVED", session_id=self.session_id, file_path=file_path, current_step=self.current_step, session_status=self.session_status, safety_state=self.safety_state)
+
+    def _snapshot_state(self) -> dict:
+        return {
+            "current_step": self.current_step,
+            "session_status": self.session_status,
+            "safety_state": self.safety_state,
+            "safety_reason": self.safety_reason,
+            "last_safety_warning_turn": self.last_safety_warning_turn,
+            "thought_record": deepcopy(self.thought_record),
+            "chat_history": deepcopy(self.chat_history),
+            "turns": deepcopy(self.turns),
+        }
+
+    def can_undo(self) -> bool:
+        return bool(self.undo_stack)
+
+    def undo_count(self) -> int:
+        return len(self.undo_stack)
+
+    def undo_last_turn(self) -> bool:
+        if not self.undo_stack:
+            return False
+
+        snapshot = self.undo_stack.pop()
+        self.current_step = int(snapshot.get("current_step") or 1)
+        self.session_status = str(snapshot.get("session_status") or "in_progress")
+        self.safety_state = str(snapshot.get("safety_state") or "normal")
+        self.safety_reason = snapshot.get("safety_reason")
+        self.last_safety_warning_turn = int(snapshot.get("last_safety_warning_turn") or 0)
+        self.thought_record = deepcopy(snapshot.get("thought_record") or self.thought_record)
+        self.chat_history = deepcopy(snapshot.get("chat_history") or [])
+        self.turns = deepcopy(snapshot.get("turns") or [])
+        self.save_session()
+        return True
 
     def is_ready_for_final_summary(self) -> bool:
         required = [
@@ -459,6 +498,8 @@ TASK:
         return self._call_llm(prompt, temperature=0.7)
 
     def process_user_turn(self, user_input: str) -> dict:
+        self.undo_stack.append(self._snapshot_state())
+        self.undo_stack = self.undo_stack[-self.UNDO_LIMIT:]
         self.chat_history.append({"role": "user", "content": user_input})
         prev_step = self.current_step
         self._debug_log("TURN_START", session_id=self.session_id, step_before=prev_step, user_input=user_input)

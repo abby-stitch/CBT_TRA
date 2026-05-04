@@ -1,0 +1,85 @@
+{
+  "session_id": "20260504_130658",
+  "last_updated": "2026-05-04 13:07:20",
+  "current_step": 1,
+  "session_status": "in_progress",
+  "safety_state": "supportive_warning",
+  "safety_reason": "Expresses hopelessness and lack of improvement",
+  "last_safety_warning_turn": 1,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 13:06",
+    "situation": "",
+    "emotion": "",
+    "intensity_before": 0,
+    "automatic_thought": "",
+    "evidence_for": [],
+    "evidence_against": [],
+    "distortions": [],
+    "predicted_distortion": [],
+    "balanced_thought": "",
+    "intensity_after": 0,
+    "summary": ""
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "Lately I feel hopeless, like nothing is improving no matter how much I try."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're going through a really tough time right now. It's understandable to feel hopeless when things seem stuck. Can you tell me more about what happened recently that made you feel this way?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support."
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "Lately I feel hopeless, like nothing is improving no matter how much I try.",
+      "assistant": "It sounds like you're going through a really tough time right now. It's understandable to feel hopeless when things seem stuck. Can you tell me more about what happened recently that made you feel this way?\n\nIf these thoughts start to feel unsafe or overwhelming, please consider reaching out to someone you trust or to professional support.",
+      "risk_state": "supportive_warning",
+      "risk_reason": "Expresses hopelessness and lack of improvement",
+      "include_safety_note": true
+    }
+  ],
+  "undo_stack": [
+    {
+      "current_step": 1,
+      "session_status": "in_progress",
+      "safety_state": "normal",
+      "safety_reason": null,
+      "last_safety_warning_turn": 0,
+      "thought_record": {
+        "date": "2026-05-04 13:06",
+        "situation": "",
+        "emotion": "",
+        "intensity_before": 0,
+        "automatic_thought": "",
+        "evidence_for": [],
+        "evidence_against": [],
+        "distortions": [],
+        "predicted_distortion": [],
+        "balanced_thought": "",
+        "intensity_after": 0,
+        "summary": ""
+      },
+      "chat_history": [
+        {
+          "role": "assistant",
+          "content": "Hello, I'm here to support you. What's on your mind today?"
+        }
+      ],
+      "turns": []
+    }
+  ]
+}

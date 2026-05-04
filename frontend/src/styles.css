@@ -801,6 +801,41 @@ input:disabled {
   justify-content: flex-end;
 }
 
+.message-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.message-undo {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  opacity: 0.95;
+  transition: background 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.message-undo:hover {
+  background: var(--surface-container-high);
+  color: var(--primary);
+}
+
+.message-undo:disabled {
+  cursor: default;
+  background: transparent;
+  color: rgba(75, 99, 109, 0.38);
+  opacity: 1;
+}
+
 .avatar {
   flex: 0 0 42px;
   width: 42px;
@@ -881,9 +916,12 @@ input:disabled {
 }
 
 .timestamp {
-  margin-top: 8px;
   font-size: 0.75rem;
   color: rgba(75, 99, 109, 0.72);
+}
+
+.bubble-wrap > .timestamp {
+  margin-top: 8px;
 }
 
 .msg.user .timestamp {

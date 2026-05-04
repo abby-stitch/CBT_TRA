@@ -1,0 +1,171 @@
+{
+  "session_id": "20260504_013026",
+  "last_updated": "2026-05-04 02:25:00",
+  "current_step": 7,
+  "session_status": "completed",
+  "safety_state": "normal",
+  "safety_reason": null,
+  "last_safety_warning_turn": 0,
+  "user_context": "a postgraduate computer science student, will graduate soon, facing final exams and doing internship for fulfilling the graduation criteria.",
+  "conversation_llm": {
+    "provider": "ollama",
+    "model": "gemma2:9b",
+    "url": "http://localhost:11434/api/generate",
+    "api_key_env_var": "OPENAI_API_KEY"
+  },
+  "thought_record": {
+    "date": "2026-05-04 01:30",
+    "situation": "I tried to write my resume earlier, but I kept deleting every sentence. I ended up just staring at the document.",
+    "emotion": "anxious",
+    "intensity_before": 80,
+    "automatic_thought": "I am terrible at this, and I will never find a job.",
+    "evidence_for": [
+      "I do not have any impressive internships to list",
+      "when I look at my projects, I do not know how to describe them in a strong way"
+    ],
+    "evidence_against": [
+      "I have completed course projects",
+      "learned a few programming skills",
+      "improved my English",
+      "examples of teamwork from classes"
+    ],
+    "distortions": [
+      "Emotional reasoning"
+    ],
+    "predicted_distortion": [
+      "Catastrophizing (fortune telling)",
+      "Overgeneralization",
+      "Emotional reasoning"
+    ],
+    "balanced_thought": "Writing a resume is hard for me, but that does not mean I am terrible. I can work through one project description at a time and ask someone for feedback.",
+    "intensity_after": 40,
+    "summary": "It sounds like you faced some anxiety while working on your resume, but you did a great job identifying those negative thoughts and looking for evidence to challenge them. Recognizing that emotional reasoning might be influencing your thinking is really helpful, and shifting towards a more balanced perspective about your abilities can make a big difference. It’s impressive how your intensity level decreased after reflecting on this situation – keep practicing these strategies!"
+  },
+  "chat_history": [
+    {
+      "role": "assistant",
+      "content": "Hello, I'm here to support you. What's on your mind today?"
+    },
+    {
+      "role": "user",
+      "content": "I tried to write my resume earlier, but I kept deleting every sentence. I ended up just staring at the document."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really frustrating.  What was your feeling when that was happening? How intense did it feel at its peak? And what kind of thought went through your mind at the worst moment during this experience?"
+    },
+    {
+      "role": "user",
+      "content": "I felt anxious.It was about 80 out of 100.I was thinking that I am terrible at this, and I will never find a job."
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really discouraging. When you were thinking that you're terrible at this and will never find a job, what are some facts or things that happened that made that thought seem believable?"
+    },
+    {
+      "role": "user",
+      "content": "I do not have any impressive internships to list, and when I look at my projects, I do not know how to describe them in a strong way."
+    },
+    {
+      "role": "assistant",
+      "content": "What facts might suggest that thought isn't completely true?"
+    },
+    {
+      "role": "user",
+      "content": "I have completed course projects, learned a few programming skills, and improved my English. I also have examples of teamwork from classes."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you're acknowledging some strengths despite feeling anxious about your resume.  Could any of these thoughts be fitting what you're experiencing: catastrophizing by thinking \"I will never find a job\" after one difficulty, overgeneralizing that \"I am terrible at this\" based on a single instance, or emotional reasoning where your anxiety is making you believe you're incapable?"
+    },
+    {
+      "role": "user",
+      "content": "Emotional reasoning sounds right. I feel anxious, and then I treat that feeling like proof that I am actually terrible."
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense. Emotional reasoning can definitely make things feel more difficult than they are.  So, given that you're feeling anxious and it's influencing your thoughts about your abilities, what might be a balanced thought that takes both sides of this into account?"
+    },
+    {
+      "role": "user",
+      "content": "Writing a resume is hard for me, but that does not mean I am terrible. I can work through one project description at a time and ask someone for feedback."
+    },
+    {
+      "role": "assistant",
+      "content": "That's a good balanced thought.  Now that you've considered things more calmly, how intense is your anxiety feeling right now compared to when you first started thinking about your resume?"
+    },
+    {
+      "role": "user",
+      "content": "I think it is around 40 now."
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you faced some anxiety while working on your resume, but you did a great job identifying those negative thoughts and looking for evidence to challenge them. Recognizing that emotional reasoning might be influencing your thinking is really helpful, and shifting towards a more balanced perspective about your abilities can make a big difference. It’s impressive how your intensity level decreased after reflecting on this situation – keep practicing these strategies!"
+    }
+  ],
+  "turns": [
+    {
+      "step_before": 1,
+      "step_after": 1,
+      "user": "I tried to write my resume earlier, but I kept deleting every sentence. I ended up just staring at the document.",
+      "assistant": "That sounds really frustrating.  What was your feeling when that was happening? How intense did it feel at its peak? And what kind of thought went through your mind at the worst moment during this experience?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 1,
+      "step_after": 2,
+      "user": "I felt anxious.It was about 80 out of 100.I was thinking that I am terrible at this, and I will never find a job.",
+      "assistant": "That sounds really discouraging. When you were thinking that you're terrible at this and will never find a job, what are some facts or things that happened that made that thought seem believable?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 2,
+      "step_after": 3,
+      "user": "I do not have any impressive internships to list, and when I look at my projects, I do not know how to describe them in a strong way.",
+      "assistant": "What facts might suggest that thought isn't completely true?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 3,
+      "step_after": 4,
+      "user": "I have completed course projects, learned a few programming skills, and improved my English. I also have examples of teamwork from classes.",
+      "assistant": "It sounds like you're acknowledging some strengths despite feeling anxious about your resume.  Could any of these thoughts be fitting what you're experiencing: catastrophizing by thinking \"I will never find a job\" after one difficulty, overgeneralizing that \"I am terrible at this\" based on a single instance, or emotional reasoning where your anxiety is making you believe you're incapable?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 4,
+      "step_after": 5,
+      "user": "Emotional reasoning sounds right. I feel anxious, and then I treat that feeling like proof that I am actually terrible.",
+      "assistant": "That makes sense. Emotional reasoning can definitely make things feel more difficult than they are.  So, given that you're feeling anxious and it's influencing your thoughts about your abilities, what might be a balanced thought that takes both sides of this into account?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 5,
+      "step_after": 6,
+      "user": "Writing a resume is hard for me, but that does not mean I am terrible. I can work through one project description at a time and ask someone for feedback.",
+      "assistant": "That's a good balanced thought.  Now that you've considered things more calmly, how intense is your anxiety feeling right now compared to when you first started thinking about your resume?",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    },
+    {
+      "step_before": 6,
+      "step_after": 7,
+      "user": "I think it is around 40 now.",
+      "assistant": "It sounds like you faced some anxiety while working on your resume, but you did a great job identifying those negative thoughts and looking for evidence to challenge them. Recognizing that emotional reasoning might be influencing your thinking is really helpful, and shifting towards a more balanced perspective about your abilities can make a big difference. It’s impressive how your intensity level decreased after reflecting on this situation – keep practicing these strategies!",
+      "risk_state": "normal",
+      "risk_reason": null,
+      "include_safety_note": false
+    }
+  ]
+}

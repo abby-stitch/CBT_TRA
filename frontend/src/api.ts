@@ -63,6 +63,12 @@ export function getSession(sessionId: string): Promise<SessionDetail> {
   return requestJson<SessionDetail>(`/api/sessions/${encodeURIComponent(sessionId)}`);
 }
 
+export function undoLastInput(sessionId: string): Promise<ResumeSessionResponse> {
+  return requestJson<ResumeSessionResponse>(`/api/sessions/${encodeURIComponent(sessionId)}/undo`, {
+    method: "POST"
+  });
+}
+
 export function resumeSession(sessionId: string): Promise<ResumeSessionResponse> {
   return requestJson<ResumeSessionResponse>(`/api/sessions/${encodeURIComponent(sessionId)}/resume`, {
     method: "POST"
