@@ -107,19 +107,26 @@ URL: http://host.docker.internal:11434/api/generate
 
 The API mode uses an OpenAI-compatible chat completions format.
 
-Copy the environment template:
+If you are only running the Docker image, create a local `.env` file in the folder where you run `docker run`:
 
 ```bash
-cp .env.example .env
+mkdir -p sessions reports
+touch .env
 ```
 
-Add your real key:
+Put your real key in `.env`:
 
 ```text
 OPENAI_API_KEY=your_real_api_key
 ```
 
-Run with the env file:
+If you cloned the repository for development, you can instead copy the included template:
+
+```bash
+cp .env.example .env
+```
+
+Run with the env file. The `--env-file` line is required for Docker API mode; writing `.env` locally is not enough unless it is passed into the container at startup:
 
 ```bash
 docker run --rm \
@@ -129,6 +136,14 @@ docker run --rm \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
   liangabby/cbt-thought-record-agent:latest
+```
+
+If the container was already running before you created or edited `.env`, stop it and run the Docker command again. Docker only reads `--env-file` when the container starts.
+
+You can check whether the running container received the key without printing the key itself:
+
+```bash
+docker exec cbt-thought-record-agent sh -lc 'test -n "$OPENAI_API_KEY" && echo "OPENAI_API_KEY loaded" || echo "OPENAI_API_KEY missing"'
 ```
 
 In the app Settings panel:

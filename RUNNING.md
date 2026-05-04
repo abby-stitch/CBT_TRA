@@ -147,10 +147,11 @@ docker run --rm `
 
 This app can also use OpenAI-compatible APIs such as OpenAI, Volcano Engine, Alibaba Cloud Bailian, and similar providers.
 
-Copy the example env file:
+If you are only running the Docker image, create a local `.env` file in the folder where you run `docker run`:
 
 ```bash
-cp .env.example .env
+mkdir -p sessions reports
+touch .env
 ```
 
 Put your real key in `.env`:
@@ -159,7 +160,13 @@ Put your real key in `.env`:
 OPENAI_API_KEY=your_real_api_key
 ```
 
-Run Docker with the env file:
+If you cloned this repository for development, you can instead copy the included template:
+
+```bash
+cp .env.example .env
+```
+
+Run Docker with the env file. The `--env-file` line is required for Docker API mode; writing `.env` locally is not enough unless it is passed into the container at startup:
 
 ```bash
 docker run --rm \
@@ -169,6 +176,14 @@ docker run --rm \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
   liangabby/cbt-thought-record-agent:latest
+```
+
+If the container was already running before you created or edited `.env`, stop it and run the Docker command again. Docker only reads `--env-file` when the container starts.
+
+You can check whether the running container received the key without printing the key itself:
+
+```bash
+docker exec cbt-thought-record-agent sh -lc 'test -n "$OPENAI_API_KEY" && echo "OPENAI_API_KEY loaded" || echo "OPENAI_API_KEY missing"'
 ```
 
 In the app, open Settings and choose:
@@ -365,10 +380,11 @@ docker run --rm `
 
 项目也可以使用 OpenAI-compatible API，例如 OpenAI、火山引擎、阿里云百炼等。
 
-复制 `.env.example`：
+如果你只是运行 Docker image，不一定有 `.env.example`。请在运行 `docker run` 的文件夹里直接创建 `.env`：
 
 ```bash
-cp .env.example .env
+mkdir -p sessions reports
+touch .env
 ```
 
 在 `.env` 中填写真实 key：
@@ -377,7 +393,13 @@ cp .env.example .env
 OPENAI_API_KEY=your_real_api_key
 ```
 
-运行 Docker 时传入 `.env`：
+如果你是 clone repository 做开发，也可以复制项目里的模板：
+
+```bash
+cp .env.example .env
+```
+
+运行 Docker 时传入 `.env`。Docker API 模式必须带上 `--env-file` 这一行；只是在本地写了 `.env`，但没有传入容器，是不会生效的：
 
 ```bash
 docker run --rm \
@@ -387,6 +409,14 @@ docker run --rm \
   -v "$PWD/sessions:/app/sessions" \
   -v "$PWD/reports:/app/reports" \
   liangabby/cbt-thought-record-agent:latest
+```
+
+如果容器已经先运行了，之后才创建或修改 `.env`，需要停止容器后重新运行上面的 `docker run`。Docker 只会在容器启动时读取 `--env-file`。
+
+可以用下面的命令检查当前容器有没有读到 key，不会把 key 本身打印出来：
+
+```bash
+docker exec cbt-thought-record-agent sh -lc 'test -n "$OPENAI_API_KEY" && echo "OPENAI_API_KEY loaded" || echo "OPENAI_API_KEY missing"'
 ```
 
 在网页 Settings 中选择：

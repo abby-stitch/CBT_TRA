@@ -29,6 +29,11 @@
 !report_test/
 !report_test/*.json
 
+# Local scratch sessions that are not part of the reported evaluation set.
+sessions_test/session_20260504_113441.json
+sessions_test/session_20260504_115358.json
+sessions_test/session_20260504_131224.json
+
 # Backend source.
 !backend/
 !backend/**/*.py
